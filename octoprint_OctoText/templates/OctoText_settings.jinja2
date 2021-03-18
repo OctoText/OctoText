@@ -1,0 +1,149 @@
+<form class="form-horizontal">
+    <fieldset>
+        <p class="help-block">{% trans %}
+                Select the printer events to be texted.
+            {% endtrans %}
+        </p>
+        <legend>{{ _('Options') }}</legend>
+        <label class="checkbox">
+            <input type="checkbox" value="pictures with text" data-bind="checked: settings.settings.plugins.OctoText.en_webcam">
+            To get a snapshot of the webcam along with the following events, enable this.
+        </label>
+        <label class="checkbox">
+            <input type="checkbox" value="Print started" data-bind="checked: settings.settings.plugins.OctoText.en_printstart">
+            Get a text when your print has started. 
+        </label>
+        <label class="checkbox">
+            <input type="checkbox" value="Print ended" data-bind="checked: settings.settings.plugins.OctoText.en_printend">
+            Get a text when your print has finished!
+        </label>
+        <label class="checkbox">
+            <input type="checkbox" value="File uploaded to the printer" data-bind="checked: settings.settings.plugins.OctoText.en_upload">
+            Get a text when your printer has recieved a file. (does not send a webcam image)
+        </label>
+        <label class="checkbox">
+            <input type="checkbox" value="Printer error" data-bind="checked: settings.settings.plugins.OctoText.en_error">
+            Get a text when your printer has encountered an error that it cannot recover from!
+        </label>
+
+    <fieldset>
+        <legend>{{ _('EMail Configuration') }}</legend>
+
+        <p class="help-block">{% trans %}
+                Please follow the guide here to set these fields depending on your phone carrier: <a href="https://github.com/berrystephenw/OctoText.git">OctoText Readme</a>
+                Check with your email provider for the SMTP port and gateway used for external mail.
+            {% endtrans %}
+        </p>
+
+        <div class="control-group">
+            <label class="control-label">{{ _('SMTP gateway') }}</label>
+            <div class="controls">
+                <input class="input-large" type="text" data-bind="value: settings.settings.plugins.OctoText.smtp_name" required>
+                <span class="help-block">{% trans %}
+                        This is the email gateway that is used to send the message. You must use a service that allows for SMTP connections. Some 
+                        free services do not allow you to connect via an outside client. 
+                        This information it typically found in the settings page of your email provider.
+                    {% endtrans %}
+                </span>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label class="control-label">{{ _('SMTP Port') }}</label>
+            <div class="controls">
+                <input class="input-mini" type="number" min="1" max="999" data-bind="value: settings.settings.plugins.OctoText.smtp_port" required>
+                <span class="help-block">{% trans %}
+                        This is the port that your email provider gives you for the SMTP service.
+                        This information it typically found in the settings page of your email provider.
+                    {% endtrans %}
+                </span>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label class="control-label">{{ _('Message') }}</label>
+            <div class="controls">
+                <input class="input-large" type="text" data-bind="value: settings.settings.plugins.OctoText.smtp_message">
+                <span class="help-block">{% trans %}
+                        This is the default message text sent - usually just for testing purposes.
+                        *Currently not used*
+                    {% endtrans %}
+                </span>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label class="control-label">{{ _('Subject') }}</label>
+            <div class="controls">
+                <input class="input-large" type="text" data-bind="value: settings.settings.plugins.OctoText.smtp_alert">
+                <span class="help-block">{% trans %}
+                        The alert message subject. Mostly for testing. OctoText will create a subject heading based on the type
+                        of message being sent. 
+                        *Currently not used*
+                    {% endtrans %}
+                </span>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label class="control-label">{{ _('Email address') }}</label>
+            <div class="controls">
+                <input class="input-large" type="text" data-bind="value: settings.settings.plugins.OctoText.server_login" required>
+                <span class="help-block">{% trans %}
+                        Enter your email address that you intend to use for OctoText. It is recommended that you set up an email account
+                        only for this app.
+                    {% endtrans %}
+                </span>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label class="control-label">{{ _('Email password') }}</label>
+            <div class="controls">
+                <input class="input-large" type="password" data-bind="value: settings.settings.plugins.OctoText.server_pass" required>
+                <span class="help-block">{% trans %}
+                        This is the password for your email account. It is currently very insecure, but will be better protected in
+                        future versions.  
+                    {% endtrans %}
+                </span>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label class="control-label">{{ _('Phone number') }}</label>
+            <div class="controls">
+                <input class="input-large" type="text" data-bind="value: settings.settings.plugins.OctoText.phone_numb" required>
+                <span class="help-block">{% trans %}
+                        Enter the phone number of the recipient to text (usually your mobile phone).  
+                    {% endtrans %}
+                </span>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label class="control-label">{{ _('Carrier SMS gateway') }}</label>
+            <div class="controls">
+                <input class="input-large" type="text" data-bind="value: settings.settings.plugins.OctoText.carrier_address" required>
+                <span class="help-block">{% trans %}
+                        This is the email address that carriers use to route to their SMS service. An example would be vtext.com for Verizon. 
+                        Please see the link at the top of the page for more information on how to find this address for your provider.  
+                    {% endtrans %}
+                </span>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <div class="controls">
+                <button class="btn btn-primary" data-bind="click: sendTestMessage, enable: !busy(), css: {disabled: busy()}"><i class="icon-spinner icon-spin" data-bind="visible: busy"></i> {{ _('Send a test message') }}</button>            
+                <span class="help-block">{% trans %}
+                        <strong>Test your Snapshot webcam settings first before testing!</strong>
+                        *You may need to save this settings page before any modifications are active*
+                        Once you have filled in all of the required entries you can use the test button to immediately send a text.
+                        You can also use the button in the navigation bar to send a text (with picture if enabled) at any time.  
+                    {% endtrans %}
+                </span>
+            </div>
+        </div>
+
+    </fieldset>
+</form>
