@@ -1,5 +1,5 @@
 # Octotext
-<img width="326" alt="OctoTexts" src="https://user-images.githubusercontent.com/44931130/111055804-8858d680-8447-11eb-9d43-c1e3daf8077f.PNG">
+<img width="326" alt="OctoText" src="https://user-images.githubusercontent.com/44931130/111055804-8858d680-8447-11eb-9d43-c1e3daf8077f.PNG">
 
 OctoText will notify you via text on common printer events. The current list of events are:
     * File uploaded
@@ -26,7 +26,7 @@ I use the free email service from Microsoft - Outlook.com. I created the email a
 and it works well. You should NOT use an email account that you care about - the plugin is not secure and while that will change in the future 
 right now it is exposed to anyone that knows what to look for. 
 
-Once you have the email account you want to use, you will need the POP/SMTP server of the account. For Outlook you can find that under 
+Once you have the email account you want to use, you will need the SMTP server of the account. For Outlook you can find that under 
 Settings->sync settings:
 
 <img width="735" alt="Outlook settings" src="https://user-images.githubusercontent.com/44931130/111056048-df5fab00-8449-11eb-8aa8-4807493750d9.png">
@@ -44,5 +44,10 @@ on your phone:
 
 <img width="326" alt="Screenshot 2021-03-13 215826" src="https://user-images.githubusercontent.com/44931130/111055811-9c043d00-8447-11eb-87b8-fdac8dd1dfff.png">
 
-
+# Problems?
+If you are having trouble with your setup, you can post on the discussion board and I'll get to your question as soon as I can. Please include a copy of the octoprint log from the logging menu of octoprint. https://github.com/berrystephenw/OctoText/discussions
+# Credits
+Gina Häußge https://github.com/foosel for creating Octoprint and the plugin Pushbullet from which some of this plugin is developed from. 
+jneilliii https://github.com/jneilliii for helping me get past some sticky problems in development 
+Charlie Powell https://github.com/cp2004 for answering even the dumbest questions on discord.
 
