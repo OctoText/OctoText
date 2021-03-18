@@ -274,7 +274,7 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 		# for details.
 		return dict(
 			OctoText=dict(
-				displayName="Octotext Plugin",
+				displayName="Octotext Plugin", # should this be self._plugin_name ??
 				displayVersion=self._plugin_version,
 
 				# version check: github repository

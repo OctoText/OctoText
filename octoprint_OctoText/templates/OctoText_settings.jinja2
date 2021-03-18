@@ -110,23 +110,25 @@
         </div>
 
         <div class="control-group">
-            <label class="control-label">{{ _('Phone number') }}</label>
+            <label class="control-label">{{ _('Phone number/user name') }}</label>
             <div class="controls">
                 <input class="input-large" type="text" data-bind="value: settings.settings.plugins.OctoText.phone_numb" required>
                 <span class="help-block">{% trans %}
-                        Enter the phone number of the recipient to text (usually your mobile phone).  
+                        Enter the phone number of the recipient to text (usually your mobile phone). If you are sending an email, Enter
+                        the user name (ie Octotext of Octotext.outlook.com). 
                     {% endtrans %}
                 </span>
             </div>
         </div>
 
         <div class="control-group">
-            <label class="control-label">{{ _('Carrier SMS gateway') }}</label>
+            <label class="control-label">{{ _('Carrier SMS gateway/email address') }}</label>
             <div class="controls">
                 <input class="input-large" type="text" data-bind="value: settings.settings.plugins.OctoText.carrier_address" required>
                 <span class="help-block">{% trans %}
                         This is the email address that carriers use to route to their SMS service. An example would be vtext.com for Verizon. 
-                        Please see the link at the top of the page for more information on how to find this address for your provider.  
+                        Please see the link at the top of the page for more information on how to find this address for your provider. If you are
+                        sending an email, put the host name here (ie outlook.com) 
                     {% endtrans %}
                 </span>
             </div>
