@@ -10,6 +10,7 @@ import smtplib
 import sarge
 import imghdr
 from email.message import EmailMessage
+from flask_login import current_user
 
 class SMTPMessages(object):
 	TEST = "Connection test"
@@ -18,6 +19,7 @@ class SMTPMessages(object):
 	PRINT_DONE = "Printjob done"
 	TIMELAPSE_DONE = "Timelapse done"
 	ERROR = "Unrecoverable Printer ERROR"
+	PRINT_FAILED = "Print Fail"
 
 class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 					octoprint.plugin.StartupPlugin,
@@ -61,11 +63,38 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 		)
 
 	def get_template_configs(self):
-			return [
-#					dict(type="navbar", custom_bindings=False),
-					dict(type="settings", name = "OctoText", custom_bindings=True)
-			]
+		return [
+#			dict(type="navbar", custom_bindings=False),
+			dict(type="settings", name = "OctoText", custom_bindings=True)
+		]
 
+	# access restrictions for sensitive data
+	def on_settings_load(self):
+		data = octoprint.plugin.SettingsPlugin.on_settings_load(self)
+
+		# only return our restricted settings to admin users - this is only needed for OctoPrint <= 1.2.16
+		restricted = ("server_pass", "server_login")
+		for r in restricted:
+			if r in data and (current_user is None or current_user.is_anonymous() or not current_user.is_admin()):
+				data[r] = None
+
+		return data
+
+	def get_settings_restricted_paths(self):
+    	# only used in OctoPrint versions > 1.2.16
+		return dict(admin=[["server_pass"], ["server_login"]])
+
+	def on_settings_save(self, data):
+
+		if "server_pass" in data and not data["server_pass"]:
+			data["server_pass"] = None
+
+		if "server_login" in data and not data["server_login"]:
+			data["server_login"] = None
+		
+		octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
+
+	# Login to the mail server
 	def smtp_login_server(self):
 			global SMTP_server
 			name = self._settings.get(["smtp_name"])
@@ -91,11 +120,12 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 				self._logger.exception(
 					"Exception while logging into mail server {message}".format(
 						message=str(e)))
+				SMTP_server.quit()
 
 			email_addr = phone_numb + "@%s" % carrier_addr
 			return email_addr
 
-	# initializes the SMTP service, logs into the email server and sends the message to the texting gateway of the provider 
+	# initializes the SMTP service, logs into the email server and sends the message to the destination address 
 	def smtp_send_message(self, notetype, title, description):
     		
 			# login to the SMTP account and mail server
@@ -172,14 +202,18 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 
 		return True
 
+	# format the MMS message - both text and image. As an email there is something not right with the format
+	# the received email doens't have a subject and the attachment is not known to be a jpg...
 	def _send_file(self, sender, path, filename, body):
 
 			# login to the SMTP account and mail server
 			email_addr = self.smtp_login_server()
 
+			login = self._settings.get(["server_login"])
+
 			msg = EmailMessage()
 			msg['Subject'] = body
-			msg['From'] = 'Spiderman' # 'OctoText@outlook.com'
+			msg['From'] = login # 'OctoText@outlook.com'
 			msg['To'] = email_addr
 			msg.preamble = 'You will not see this in a MIME-aware mail reader.\n'
 			
@@ -200,11 +234,11 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 			
 			# Send text message through SMS gateway of destination number
 			# format the message like an email - can we send emails too?
-			SMTP_server.sendmail( '', email_addr, msg.as_string() )
+			SMTP_server.sendmail(email_addr, email_addr, msg.as_string() )
 			SMTP_server.quit()
 			return True
 
-
+	# this is currently not called but should be tested on a Pi (was disabled for debug)
 	def _process_snapshot(self, snapshot_path, pixfmt="yuv420p"):
 			hflip  = self._settings.global_get_boolean(["webcam", "flipH"])
 			vflip  = self._settings.global_get_boolean(["webcam", "flipV"])
@@ -243,8 +277,9 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 			self._logger.info("request = {}".format(request))
 
 			try:
-				self._logger.info("sending text")
-				result = self._send_message_with_webcam_image("Test from the OctoText Plugin", "Your printer name here", sender="OctoText")
+				self._logger.info("Sending text with image")
+				result = self._send_message_with_webcam_image("Test from the OctoText Plugin.", self._settings.get(["smtp_message"]), 
+					sender="OctoText")
 				#self.smtp_send_message("Testing", "Only a test", "of the emergency broadcast system")
 			except Exception as e:
 				self._logger.exception("Exception while sending text, {message}".format(message=str(e)))
@@ -331,8 +366,17 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 			error = payload["error"]
 
 			noteType = SMTPMessages.ERROR
-			title = "An unrecoverable error has been encountered!"
+			title = "Unrecoverable Error!"
 			description = "{file} {error}".format(file=title, error=error)
+		
+		elif event == octoprint.events.Events.PRINT_FAILED:
+			reason = payload["reason"]
+			time = payload["time"]
+			time = int(time)
+
+			noteType = SMTPMessages.PRINT_FAILED
+			title = "Print Fail " + time.str
+			description = "{file} {error}".format(file=title, error=reason)
 
 		if noteType is None:
 			return
