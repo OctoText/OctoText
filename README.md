@@ -1,6 +1,4 @@
 # Octotext
-<img width="326" alt="OctoText" src="https://user-images.githubusercontent.com/44931130/111055804-8858d680-8447-11eb-9d43-c1e3daf8077f.PNG">
-
 <img width="326" alt="OctoText1" src="extras/IMG_6013.PNG">
 <img width="326" alt="OctoText2" src="extras/IMG_6016.PNG">
 
