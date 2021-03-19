@@ -130,11 +130,13 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
     		
 			# login to the SMTP account and mail server
 			email_addr = self.smtp_login_server()
+
+			login = self._settings.get(["server_login"])
 			
 			# Send text message through SMS gateway of destination number
 			# format the message like an email - can we send emails too?
 			self._logger.info(email_addr)
-			message = ("From: %s\r\n" % "OctoText"
+			message = ("From: %s\r\n" % login
 				+ "To: %s" % email_addr +"\r\n"
 				+ "Subject: %s\r\n" % notetype
 				+ "\r\n"
