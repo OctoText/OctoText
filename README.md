@@ -1,14 +1,16 @@
 # Octotext
-<img width="326" alt="OctoText1" src="extras/IMG_6013.PNG">
-<img width="326" alt="OctoText2" src="extras/IMG_6016.PNG">
+<img width="326" alt="OctoText1" src="extras/IMG_6013.PNG"> Text to your phone!
+<img width="326" alt="OctoText2" src="extras/IMG_6016.PNG"> Email printer events!
+<img width="640" alt="Recieve Email" src="extras/octotext-email.png">
 
 OctoText will notify you via text (or email) on common printer events. The current list of events are:
-   <li> * File uploaded
-    * Print started
-    * Print done
-    * Timelapse done
-    * Error (unrecoverable)</li>
-
+<ul>
+   <li> File uploaded</li>
+   <li> Print started</li>
+   <li> Print done</li>
+   <li> Timelapse done</li>
+   <li> Error (unrecoverable)</li>
+</ul>
 There is also a test message that is used to verify your settings
 
 ## Setup
@@ -16,7 +18,7 @@ There is also a test message that is used to verify your settings
 Install via the bundled [Plugin Manager](https://docs.octoprint.org/en/master/bundledplugins/pluginmanager.html)
 or manually using this URL:
 
-    https://github.com/berrystephenw/Octotext/archive/master.zip
+    https://github.com/berrystephenw/Octotext/archive/master.zip (sorry, this is currently not installed!)
 
 The plugin needs no special installation.
 

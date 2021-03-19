@@ -9,11 +9,11 @@ authors:
 license: AGPLv3
 
 # TODO
-date: today's date in format YYYY-MM-DD, e.g. 2015-04-21
+date: 2021-03-19
 
-homepage: https://github.com/berrystephenw/OctoPrint-Octotext
-source: https://github.com/berrystephenw/OctoPrint-Octotext
-archive: https://github.com/berrystephenw/OctoPrint-Octotext/archive/master.zip
+homepage: https://github.com/berrystephenw/Octotext
+source: https://github.com/berrystephenw/Octotext
+archive: https://github.com/berrystephenw/Octotext/archive/master.zip
 
 # TODO
 # Set this to true if your plugin uses the dependency_links setup parameter to include
@@ -22,21 +22,19 @@ archive: https://github.com/berrystephenw/OctoPrint-Octotext/archive/master.zip
 
 # TODO
 tags:
-- a list
-- of tags
-- that apply
-- to your plugin
-- (take a look at the existing plugins for what makes sense here)
+- email
+- text
+- notification
 
 # TODO
 screenshots:
-- url: url of a screenshot, /assets/img/...
-  alt: alt-text of a screenshot
-  caption: caption of a screenshot
-- url: url of another screenshot, /assets/img/...
-  alt: alt-text of another screenshot
-  caption: caption of another screenshot
-- ...
+- url: /extras/IMG_6013.PNG
+  alt: Text phone shot
+  caption: Text message received
+- url: /extras/IMG_6016.PNG
+  alt: Email received
+  caption: Email is also possible instead of text
+
 
 # TODO
 featuredimage: url of a featured image for your plugin, /assets/img/...
