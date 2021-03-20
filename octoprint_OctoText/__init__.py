@@ -22,6 +22,7 @@ class SMTPMessages(object):
 	PRINT_FAILED = "Print Fail"
 
 class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
+					octoprint.plugin.ProgressPlugin,
 					octoprint.plugin.StartupPlugin,
 					octoprint.plugin.SettingsPlugin,
                     octoprint.plugin.AssetPlugin,
@@ -41,6 +42,8 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 			phone_numb = "8675309", 				# sorry jenny!
 			carrier_address = "mypixmessages.com",
 			push_message = None,
+			progress_interval = 0,
+			en_progress = False,
 			en_webcam = True,
 			en_printstart = True,
 			en_printend = True,
@@ -50,6 +53,26 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 
 	def get_api_commands(self):
     		return dict(test=["token"])
+
+	#~~ PrintProgressPlugin
+
+	def on_print_progress(self, storage, path, progress):
+		if not self._settings.get(["en_progress"]):
+			return
+
+		if progress == 0:
+			return
+		
+		if progress % int(self._settings.get(["progress_interval"])) == 0:
+			title = "Print Progress"
+			description = str(progress) + " percent finished"
+			noteType = "Status"
+			if self._settings.get(["do_cam_snapshot"]):
+				status = self._send_message_with_webcam_image(title, description)
+				if not status:
+					self.smtp_send_message(noteType, title, description)
+			else:
+				self.smtp_send_message(noteType, title, description)
 
 	##~~ AssetPlugin mixin
 
@@ -64,7 +87,7 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 
 	def get_template_configs(self):
 		return [
-#			dict(type="navbar", custom_bindings=False),
+#			dict(type="navbar", name = "OctoText", custom_bindings=True),
 			dict(type="settings", name = "OctoText", custom_bindings=True)
 		]
 
@@ -75,7 +98,7 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 		# only return our restricted settings to admin users - this is only needed for OctoPrint <= 1.2.16
 		restricted = ("server_pass", "server_login")
 		for r in restricted:
-			if r in data and (current_user is None or current_user.is_anonymous() or not current_user.is_admin()):
+			if r in data and (current_user is None or current_user.is_anonymous or not current_user.has_permission):
 				data[r] = None
 
 		return data
@@ -147,7 +170,7 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 			SMTP_server.quit()
 			return True
 
-	## - the start of integrating the webcam code. So far it is doing no damage ;)
+	# send an image with the message. have to watch for errors connecting to the camera
 	def _send_message_with_webcam_image(self, title, body, filename=None, sender=None):
 
 		self._logger.info("Enable webcam setting {}".format(self._settings.get(["en_webcam"])))
@@ -189,7 +212,7 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 				tempFile.name += ".jpg"
 
 				self._logger.info("Webcam tempfile {}".format(tempFile.name))
-				# flip or rotate as needed
+				# flip or rotate as needed - *** commented out for now *****
 				#self._process_snapshot(tempFile)
 
 				if not self._send_file(sender, tempFile.name, filename, title + " " + body):
@@ -235,7 +258,7 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 				msg.add_attachment(msg_img, maintype='image', subtype='jpg')
 			
 			# Send text message through SMS gateway of destination number
-			# format the message like an email - can we send emails too?
+			# format the message like an email
 			SMTP_server.sendmail(email_addr, email_addr, msg.as_string() )
 			SMTP_server.quit()
 			return True
@@ -294,48 +317,22 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 	def on_after_startup(self):
 			self._logger.info("--------------------------------------------")
 			self._logger.info("OctoText started")
-			self._logger.info("SMTP Name: {}, SMTP port: {}, SMTP message: {}, server login: {}, server_pass {},".format(
+			self._logger.info("SMTP Name: {}, SMTP port: {}, SMTP message: {}, server login: {}".format(
 						self._settings.get(["smtp_name"]),
 						self._settings.get(["smtp_port"]),
 						self._settings.get(["smtp_message"]),
-						self._settings.get(["server_login"]),
-						self._settings.get(["server_pass"])
+						self._settings.get(["server_login"])
 			))
 			self._logger.info("--------------------------------------------")
 
-	##~~ Softwareupdate hook
-
-	def get_update_information(self):
-		# Define the configuration for your plugin to use with the Software Update
-		# Plugin here. See https://docs.octoprint.org/en/master/bundledplugins/softwareupdate.html
-		# for details.
-		return dict(
-			OctoText=dict(
-				displayName="Octotext Plugin", # should this be self._plugin_name ??
-				displayVersion=self._plugin_version,
-
-				# version check: github repository
-				type="github_release",
-				user="berrystephenw",
-				repo="Octotext",
-				current=self._plugin_version,
-
-				# update method: pip
-				pip="https://github.com/berrystephenw/Octotext/archive/{target_version}.zip"
-			)
-		)
-
-	#~~ EventPlugin API
+		#~~ EventPlugin API
 
 	def on_event(self, event, payload):
 
 		import os
 
 		noteType = title = description = None
-		#if self._settings_get(["en_webcam"]):
-		#	do_cam_snapshot = True
-		#else:
-		#	do_cam_snapshot = False
+
 		do_cam_snapshot = True
 
 		if event == octoprint.events.Events.UPLOAD:
@@ -374,31 +371,52 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 		elif event == octoprint.events.Events.PRINT_FAILED:
 			reason = payload["reason"]
 			time = payload["time"]
-			time = int(time)
+			time = str(int(time))
 
 			noteType = SMTPMessages.PRINT_FAILED
-			title = "Print Fail " + time.str
+			title = "Print Fail " + time
 			description = "{file} {error}".format(file=title, error=reason)
 
 		if noteType is None:
 			return
 
 		if do_cam_snapshot:
-			self._send_message_with_webcam_image(title, description)
+			status = self._send_message_with_webcam_image(title, description)
+			if not status:
+				self.smtp_send_message(noteType, title, description)
 		else:
 			self.smtp_send_message(noteType, title, description)
+
+	##~~ Softwareupdate hook
+
+	def get_update_information(self):
+		# Define the configuration for your plugin to use with the Software Update
+		# Plugin here. See https://docs.octoprint.org/en/master/bundledplugins/softwareupdate.html
+		# for details.
+		return dict(
+			OctoText=dict(
+				displayName="Octotext Plugin", # should this be self._plugin_name ??
+				displayVersion=self._plugin_version,
+
+				# version check: github repository
+				type="github_release",
+				user="berrystephenw",
+				repo="Octotext",
+				current=self._plugin_version,
+
+				# update method: pip
+				pip="https://github.com/berrystephenw/Octotext/archive/{target_version}.zip"
+			)
+		)
 
 # If you want your plugin to be registered within OctoPrint under a different name than what you defined in setup.py
 # ("OctoPrint-PluginSkeleton"), you may define that here. Same goes for the other metadata derived from setup.py that
 # can be overwritten via __plugin_xyz__ control properties. See the documentation for that.
 __plugin_name__ = "OctoText"
 
-# Starting with OctoPrint 1.4.0 OctoPrint will also support to run under Python 3 in addition to the deprecated
-# Python 2. New plugins should make sure to run under both versions for now. Uncomment one of the following
-# compatibility flags according to what Python versions your plugin supports!
 # __plugin_pythoncompat__ = ">=2.7,<3" # only python 2
-# __plugin_pythoncompat__ = ">=3,<4" # only python 3
-__plugin_pythoncompat__ = ">=2.7,<4"  # python 2 and 3
+__plugin_pythoncompat__ = ">=3,<4" # only python 3
+#__plugin_pythoncompat__ = ">=2.7,<4"  # python 2 and 3
 
 
 def __plugin_load__():
@@ -408,5 +426,4 @@ def __plugin_load__():
 	global __plugin_hooks__
 	__plugin_hooks__ = {
 		"octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information
-	  	#"octoprint.printer.estimation.factory": __plugin_implementation__.create_estimator_factory
 	}
