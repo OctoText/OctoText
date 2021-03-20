@@ -1,4 +1,4 @@
-# Octotext
+# Octotext - Simple, Easy to use, Free text or email notifications
 <img width="326" alt="OctoText1" src="extras/IMG_6013.PNG"> Text to your phone!
 <img width="326" alt="OctoText2" src="extras/IMG_6016.PNG"> Email printer events!
 <img width="640" alt="Recieve Email" src="extras/octotext-email.png">

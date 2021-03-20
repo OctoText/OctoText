@@ -42,7 +42,7 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 			phone_numb = "8675309", 				# sorry jenny!
 			carrier_address = "mypixmessages.com",
 			push_message = None,
-			progress_interval = 0,
+			progress_interval = 10,				# should we limit this to a reasonable number?
 			en_progress = False,
 			en_webcam = True,
 			en_printstart = True,
