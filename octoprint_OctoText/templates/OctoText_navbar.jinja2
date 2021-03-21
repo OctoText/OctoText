@@ -1,1 +1,1 @@
-<button class="btn" onclick='OctoPrint.simpleApiGet("OctoText")' style="font-size: 1.3em; text-shadow: 0px 0px 2px #000; cursor: pointer; user-select: none">Send Text&#127758</button>
+<button class="btn btn-primary" data-bind="click: sendTestMessage, enable: !busy(), css: {disabled: busy()}"><i class="icon-spinner icon-spin" data-bind="visible: busy"></i> {{ _('Send a test message') }}</button>            

@@ -9,6 +9,8 @@ OctoText will notify you via text (or email) on common printer events. The curre
    <li> Print started</li>
    <li> Print done</li>
    <li> Timelapse done</li>
+   <li> Print failure </li>
+   <li> Peroidic progress updates </li>
    <li> Error (unrecoverable)</li>
 </ul>
 There is also a test message that is used to verify your settings
@@ -26,8 +28,8 @@ The plugin needs no special installation.
 
 In order to configure OctoText you have to use an email account to send the messages from. 
 I use the free email service from Microsoft - Outlook.com. I created the email address octotext@outlook.com for the development of the plugin
-and it works well. You should NOT use an email account that you care about - the plugin is not secure and while that will change in the future 
-right now your password is exposed to anyone that knows what to look for. 
+and it works well. You should NOT use an email account that you care about - the plugin may not be secure and while that will change in the future 
+right now your password could be exposed to anyone that knows what to look for. 
 
 Once you have the email account you want to use, you will need the SMTP server of the account. For Outlook you can find that under 
 Settings->sync settings:
@@ -39,7 +41,7 @@ cover most users:
 
 <img width="368" alt="SMS gateway" src="https://user-images.githubusercontent.com/44931130/111055919-a7a43380-8448-11eb-836d-40a9706d7d51.png">
 
-This table was taken from: https://en.wikipedia.org/wiki/SMS_gateway please refer to Wikipedia for more up to date information
+In addition to this table, Xfinity uses mypixmessage.com for SMS/MMS gateway. This table was taken from: https://en.wikipedia.org/wiki/SMS_gateway please refer to Wikipedia for more up to date information
 
 Once you have gathered all this information you will need to enter it into the settings page on OctoText. The Test Icon on the OctoPrint front page 
 also doubles as a test message to check your settings. Just press it once and wait 30 seconds or so and you should see a text (if everything is set correctly)

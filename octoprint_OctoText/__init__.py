@@ -5,12 +5,14 @@ from octoprint.printer.estimation import PrintTimeEstimator
 import os
 import requests
 import octoprint.plugin
+import octoprint.events
 import flask
 import smtplib
 import sarge
 import imghdr
 from email.message import EmailMessage
 from flask_login import current_user
+import datetime
 
 class SMTPMessages(object):
 	TEST = "Connection test"
@@ -38,7 +40,7 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 			smtp_alert = "*ALERT from your PRINTER*",
 			smtp_message = "Your printer is creating something wonderful!", # the message to send
 			server_login = "YourEmail@outlook.com", 	# mail account to use
-			server_pass = "not a valid password", 			# password for that account
+			server_pass = "not a valid password", 	# password for that account
 			phone_numb = "8675309", 				# sorry jenny!
 			carrier_address = "mypixmessages.com",
 			push_message = None,
@@ -87,7 +89,7 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 
 	def get_template_configs(self):
 		return [
-#			dict(type="navbar", name = "OctoText", custom_bindings=True),
+			dict(type="navbar", name = "OctoText", custom_bindings=True),
 			dict(type="settings", name = "OctoText", custom_bindings=True)
 		]
 
@@ -132,8 +134,18 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 			self._logger.info(port)
 
 			# setup the server with the SMTP address/port
-			SMTP_server = smtplib.SMTP(name, port)
-			SMTP_server.starttls()
+			try:
+				self._logger.info("before server smtplib")
+				SMTP_server = smtplib.SMTP(name, port)
+				self._logger.info("SMTP_server {}".format(SMTP_server))
+				error = SMTP_server.starttls()
+				self._logger.info("startttls() {}".format(error))
+			except Exception as e:
+				self._logger.exception(
+					"Exception while talking to your mail server {message}".format(
+						message=str(e)))
+				return ["SMTP", None]
+
 			# login to the mail account
 			self._logger.info(login)
 			self._logger.info(passw)
@@ -144,30 +156,39 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 					"Exception while logging into mail server {message}".format(
 						message=str(e)))
 				SMTP_server.quit()
+				return ["LOGIN_E",None]
 
 			email_addr = phone_numb + "@%s" % carrier_addr
-			return email_addr
+			return [None, email_addr]
 
 	# initializes the SMTP service, logs into the email server and sends the message to the destination address 
 	def smtp_send_message(self, notetype, title, description):
-    		
-			# login to the SMTP account and mail server
-			email_addr = self.smtp_login_server()
 
+			# login to the SMTP account and mail server
+			error, email_addr = self.smtp_login_server()
 			login = self._settings.get(["server_login"])
-			
+
+			if not (error == None):
+				return error
+
 			# Send text message through SMS gateway of destination number
 			# format the message like an email - can we send emails too?
 			self._logger.info(email_addr)
 			message = ("From: %s\r\n" % login
 				+ "To: %s" % email_addr +"\r\n"
 				+ "Subject: %s\r\n" % notetype
-				+ "\r\n"
+				+ "\r\n\r\n"
 				+ title + "\r\n" + description)
 
 			login = self._settings.get(["server_login"])
-			SMTP_server.sendmail(login, email_addr, message) # works for Xfinity
-			SMTP_server.quit()
+			try:
+				SMTP_server.sendmail(login, email_addr, message) 
+				SMTP_server.quit()
+			except Exception as e:
+				self._logger.exception(
+					"Exception while logging into SMTP server {message}".format(
+						message=str(e)))
+				return "SENDM_E"
 			return True
 
 	# send an image with the message. have to watch for errors connecting to the camera
@@ -196,7 +217,7 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 				tempFile = tempfile.NamedTemporaryFile(delete=False)
 				response = get(
 					snapshot_url,
-					verify=False
+					verify=True #False
                 )
 				response.raise_for_status()
 				tempFile.write(response.content)
@@ -205,7 +226,7 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 				self._logger.exception(
 					"Exception while fetching snapshot from webcam, sending only a note: {message}".format(
 						message=str(e)))
-				return False
+				return "SNAP"
 			else:
 				# ffmpeg can't guess file type it seems
 				os.rename(tempFile.name, tempFile.name + ".jpg")
@@ -214,53 +235,57 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 				self._logger.info("Webcam tempfile {}".format(tempFile.name))
 				# flip or rotate as needed - *** commented out for now *****
 				#self._process_snapshot(tempFile)
+				result = self._send_file(sender, tempFile.name, filename, title + " " + body)
+				if result == True:
+					try:
+						os.remove(tempFile.name)
+					except:
+						self._logger.exception("Could not remove temporary snapshot file {}".format(tempFile.name))
+						return False
 
-				if not self._send_file(sender, tempFile.name, filename, title + " " + body):
-					self._logger.warn("Could not send a file message with the webcam image, sending only a note")
-					return False
-    					
-				try:
-					os.remove(tempFile.name)
-				except:
-					self._logger.exception("Could not remove temporary snapshot file {}".format(tempFile.name))
-					return False
-
-		return True
+		return result
 
 	# format the MMS message - both text and image. As an email there is something not right with the format
 	# the received email doens't have a subject and the attachment is not known to be a jpg...
 	def _send_file(self, sender, path, filename, body):
 
 			# login to the SMTP account and mail server
-			email_addr = self.smtp_login_server()
+			error, email_addr = self.smtp_login_server()
+
+			if not (error == None):
+				return error
 
 			login = self._settings.get(["server_login"])
-
 			msg = EmailMessage()
 			msg['Subject'] = body
 			msg['From'] = login # 'OctoText@outlook.com'
 			msg['To'] = email_addr
 			msg.preamble = 'You will not see this in a MIME-aware mail reader.\n'
+			msg.set_content("""\
+				Message sent from OctoText!""")
 			
 			self._logger.info("path for image: {}".format(path))
 
-			if filename != '':
+			if path != '':
 				try:
-					fp = open( path, 'rb' )
+					fp = open(path, 'rb')
 				except Exception as e:
 					self._logger.exception("Exception while opening file for snapshot, {message}".format(message=str(e)))
-				msg_img = fp.read()
-				fp.close()
 
-				# debug ended here - the subtype must be returning as None only on the Rpi. **********************
-				# not sure that it matters since we force 'jpg' in the filename
-				#msg.add_attachment(msg_img, maintype='image', subtype=imghdr.what(None, msg_img))
-				msg.add_attachment(msg_img, maintype='image', subtype='jpg')
+				filename = datetime.datetime.now().isoformat(timespec='minutes')+'.jpg'
+				msg.add_attachment(fp.read(), maintype='image', subtype='jpg', filename=filename)
+
+				fp.close()
 			
-			# Send text message through SMS gateway of destination number
-			# format the message like an email
-			SMTP_server.sendmail(email_addr, email_addr, msg.as_string() )
-			SMTP_server.quit()
+			# Send text message through SMS gateway of destination number/address
+			try:
+				SMTP_server.sendmail(email_addr, email_addr, msg.as_string() )
+				SMTP_server.quit()
+			except Exception as e:
+				self._logger.exception(
+					"Exception while logging into SMTP server(send_file) {message}".format(
+						message=str(e)))
+				return "SENDM_E"
 			return True
 
 	# this is currently not called but should be tested on a Pi (was disabled for debug)
@@ -305,13 +330,19 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 				self._logger.info("Sending text with image")
 				result = self._send_message_with_webcam_image("Test from the OctoText Plugin.", self._settings.get(["smtp_message"]), 
 					sender="OctoText")
-				#self.smtp_send_message("Testing", "Only a test", "of the emergency broadcast system")
 			except Exception as e:
 				self._logger.exception("Exception while sending text, {message}".format(message=str(e)))
 				return flask.make_response(flask.jsonify(result=False, error="SMTP"))
 
 			#result = True
-			return flask.make_response(flask.jsonify(result=result))
+			self._logger.info("String returned from send_message_with_webcam {}".format(result))
+			if not (result == True):
+				error = result
+				result = False
+			else:
+				error = None
+
+			return flask.make_response(flask.jsonify(result=result, error=error))
 
 	## testing logging and proper startup of passed values in settings forms
 	def on_after_startup(self):
