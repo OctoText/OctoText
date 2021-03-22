@@ -1,4 +1,5 @@
-# Octotext - Simple, Easy to use, Free text or email notifications <img width="128" alt="OctoText" src="/assets/img/iconfinder_13_1236350.png">
+# Octotext - Simple, Easy to use, Free text or email notifications 
+<img width="128" alt="OctoText" src="/assets/img/iconfinder_13_1236350.png">
 OctoText will notify you via text (or email) on common printer events. The current list of events are:
 <ul>
    <li> File uploaded</li>
@@ -28,7 +29,7 @@ The plugin needs no special installation.
 In order to configure OctoText you have to use an email account to send the messages from. 
 I use the free email service from Microsoft - Outlook.com. I created the email address octotext@outlook.com for the development of the plugin
 and it works well. You should NOT use an email account that you care about - the plugin may not be secure and while that will change in the future 
-right now your password could be exposed to anyone that knows what to look for. 
+right now your password could be exposed to anyone that knows what to look for that has access to your machine. 
 
 Once you have the email account you want to use, you will need the SMTP server of the account. For Outlook you can find that under 
 Settings->sync settings:
