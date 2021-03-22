@@ -1,4 +1,5 @@
 # Octotext - Simple, Easy to use, Free text or email notifications <img width="128" alt="OctoText" src="/assets/img/iconfinder_13_1236350.png">
+OctoText will notify you via text (or email) on common printer events. The current list of events are:
 <ul>
    <li> File uploaded</li>
    <li> Print started</li>
@@ -13,11 +14,6 @@
 <img width="326" alt="OctoText2" src="assets/img/IMG_6016.PNG"> Email printer events!
 <img width="640" alt="Recieve Email" src="assets/img/octotext-email.png">
 </p>
-
-OctoText will notify you via text (or email) on common printer events. The current list of events are:
-
-There is also a test message that is used to verify your settings
-
 ## Setup
 
 Install via the bundled [Plugin Manager](https://docs.octoprint.org/en/master/bundledplugins/pluginmanager.html)
