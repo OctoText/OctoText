@@ -1,5 +1,4 @@
-# Octotext - Simple, Easy to use, Free text or email notifications 
-<img width="128" alt="OctoText" src="/assets/img/iconfinder_13_1236350.icon">
+# Octotext - Simple, Easy to use, Free text or email notifications <img width="128" alt="OctoText" src="/assets/img/iconfinder_13_1236350.png">
 <p>
 <img width="326" alt="OctoText1" src="assets/img/IMG_6013.PNG"> Text to your phone!
 <img width="326" alt="OctoText2" src="assets/img/IMG_6016.PNG"> Email printer events!
