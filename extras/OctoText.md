@@ -33,7 +33,7 @@ screenshots:
   caption: Text message received
 - url: /extras/IMG_6016.PNG
   alt: Email received
-  caption: Email is also possible instead of text
+  caption: Email is also possible as well as text
 
 
 # TODO
@@ -57,7 +57,7 @@ compatibility:
   # OctoPrint versions being supported.
 
   octoprint:
-  - 1.2.0
+  - 1.4.0
 
   # List of compatible operating systems
   #
@@ -92,9 +92,20 @@ compatibility:
   # is EOL), leave at ">=2.7,<3" - be aware that your plugin will not be allowed to register on the
   # plugin repository if it only support Python 2.
 
-  python: ">=2.7,<3"
+  python: ">=3,<4"
 
 ---
+# Octotext - Simple, Easy to use, Free text or email notifications <img width="128" alt="OctoText" src="/assets/img/iconfinder_13_1236350.icon">
+<img width="326" alt="OctoText1" src="/assets/img/IMG_6013.PNG"> Text to your phone!
+<img width="326" alt="OctoText2" src="/assets/img/IMG_6016.PNG"> Email printer events!
 
-**TODO**: Longer description of your plugin, configuration examples etc. This part will be visible on the page at
-http://plugins.octoprint.org/plugin/OctoText/
+Get automatically notified when on printer events:
+<ul>
+   <li> File uploaded</li>
+   <li> Print started</li>
+   <li> Print done</li>
+   <li> Timelapse done</li>
+   <li> Print failure </li>
+   <li> Peroidic progress updates </li>
+   <li> Error (unrecoverable)</li>
+</ul>

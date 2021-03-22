@@ -224,7 +224,7 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 				tempFile.close()
 			except Exception as e:
 				self._logger.exception(
-					"Exception while fetching snapshot from webcam, sending only a note: {message}".format(
+					"Exception while fetching snapshot from webcam: {message}".format(
 						message=str(e)))
 				return "SNAP"
 			else:
