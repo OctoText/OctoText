@@ -1,7 +1,7 @@
 <form class="form-horizontal">
     <fieldset>
         <p class="help-block">{% trans %}
-                Select the printer events to be texted.
+                Select the printer events to be texted or emailed.
             {% endtrans %}
         </p>
         <legend>{{ _('Options') }}</legend>
@@ -15,7 +15,7 @@
         </label>
         <label class="checkbox">
             <input type="checkbox" value="Print ended" data-bind="checked: settings.settings.plugins.OctoText.en_printend">
-            Get a text when your print has finished!
+            Get a text when your print has finished.
         </label>
         <label class="checkbox">
             <input type="checkbox" value="File uploaded to the printer" data-bind="checked: settings.settings.plugins.OctoText.en_upload">
@@ -25,7 +25,24 @@
             <input type="checkbox" value="Printer error" data-bind="checked: settings.settings.plugins.OctoText.en_error">
             Get a text when your printer has encountered an error that it cannot recover from!
         </label>
+        <label class="checkbox">
+            <input type="checkbox" value="Progress notifications" data-bind="checked: settings.settings.plugins.OctoText.en_progress">
+            Get texts periodically as the print progresses. Also set the progress interval below.
+        </label>
 
+        <div class="control-group">
+        <label class="control-label">{{ _('Progress Interval (percentage)') }}</label>
+            <div class="controls">
+                <input class="input-mini" type="number" min="1" max="50" data-bind="value: settings.settings.plugins.OctoText.progress_interval" required>
+                <span class="help-block">{% trans %}
+                        Set the % interval for texts to be sent during the print. A 5% interval will send a text or email every 5% progress points during the print - 5,10,15% etc intervals.
+                        The maximum frequency is 1% (100 emails or texts!), the minimum is 50% (one email/text at the half way point).
+                    {% endtrans %}
+                </span>
+            </div>
+        </div>
+
+    </fieldset>
     <fieldset>
         <legend>{{ _('EMail Configuration') }}</legend>
 

@@ -28,14 +28,20 @@ $(function() {
                     self.busy(false);
                     if (response.result) {
                         new PNotify({
-                            title: gettext("Test message sent"),
-                            text: gettext("A test message was sent to OctoText, everything appears good on our side. \n\r Give your service a minute to route the text to you!"),
+                            title: gettext("Congratulations!"),
+                            text: gettext("A test message was sent to OctoText, everything appears good on our side. \n\r Give your service a minute to route the text or email to you!"),
                             type: "success"
                         });
                     } else {
                         var text;
-                        if (response.error === "SMTP") {
-                            text = gettext("Test message could not be sent to email server due to failure in send message, check your settings");
+                        if (response.error === "SNAP") {
+                            text = gettext("Test message could not be sent to email server due to failure in opening your webcam, check your settings!");
+                        } else if (response.error === "LOGIN_E") {
+                            text = gettext("Failure to login to your email account!");
+                        } else if (response.error === "SENDM_E"){
+                            text = gettext("Exception while logging into mail server. Check your login and password.");
+                        } else if (response.error === "SMTP"){
+                            text = gettext("Exception while talking to your mail server, check your SMTP settings.");
                         } else {
                             text = gettext("Test message could not be sent, check log & your settings");
                         }
@@ -65,8 +71,8 @@ $(function() {
     OCTOPRINT_VIEWMODELS.push({
         construct: OctoTextViewModel,
         // ViewModels your plugin depends on, e.g. loginStateViewModel, settingsViewModel, ...
-        dependencies: [ /* "loginStateViewModel",*/ "settingsViewModel" ],
+        dependencies: [ /* "loginStateViewModel",*/ "settingsViewModel", "navigationViewModel"],
         // Elements to bind to, e.g. #settings_plugin_OctoText, #tab_plugin_OctoText, ...
-        elements: ["#settings_plugin_OctoText"]
+        elements: ["#settings_plugin_OctoText", "#navbar_plugin_OctoText"]
     });
 });
