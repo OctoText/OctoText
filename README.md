@@ -15,6 +15,7 @@ OctoText will notify you via text (or email) on common printer events. The curre
 <img width="326" alt="OctoText2" src="assets/img/IMG_6016.PNG"> Email printer events!
 <img width="640" alt="Recieve Email" src="assets/img/octotext-email.png">
 </p>
+
 ## Setup
 
 Install via the bundled [Plugin Manager](https://docs.octoprint.org/en/master/bundledplugins/pluginmanager.html)
