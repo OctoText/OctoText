@@ -22,22 +22,27 @@ archive: https://github.com/berrystephenw/Octotext/archive/master.zip
 
 # TODO
 tags:
+- octotext
+- printer status
 - email
 - text
 - notification
 
 # TODO
 screenshots:
-- url: /extras/IMG_6013.PNG
-  alt: Text phone shot
+- url: /assets/img/plugins/OctoText/IMG_6025.PNG
+  alt: Webcam integration
   caption: Text message received
-- url: /extras/IMG_6016.PNG
-  alt: Email received
-  caption: Email is also possible as well as text
+- url: /assets/img/plugins/OctoText/IMG_6024.PNG
+  alt: Touch UI
+  caption: Touch UI
+- url: /assets/img/plugins/OctoText/settings.PNG
+  alt: Settings page
+  caption: Settings page
 
 
 # TODO
-featuredimage: url of a featured image for your plugin, /assets/img/...
+featuredimage: /assets/img/plugins/OctoText/octotext-email.PNG
 
 # TODO
 # You only need the following if your plugin requires specific OctoPrint versions or
@@ -95,12 +100,15 @@ compatibility:
   python: ">=3,<4"
 
 ---
-# Octotext - Simple, Easy to use, Free text or email notifications 
-<img width="128" alt="OctoText" src="/assets/img/iconfinder_13_1236350.png">
-<img width="326" alt="OctoText1" src="/assets/img/IMG_6013.PNG"> Text to your phone!
-<img width="326" alt="OctoText2" src="/assets/img/IMG_6016.PNG"> Email printer events!
+# OctoText - Simple, Easy to use, Free text or email notifications 
+OctoText is a notification plugin that will send you a text or email on configurable printer events. All 
+you need is an email account and the printer status - along with a webcam snapshot if configured - will
+be sent to you either through email or SMS text message. 
 
-Get automatically notified when on printer events:
+OctoText is not a service, you will never be charged and your information is only stored on the device it
+is installed on and never transmitted anywhere for any reason.
+
+## Get optionally notified on the following printer events:
 <ul>
    <li> File uploaded</li>
    <li> Print started</li>
@@ -110,3 +118,26 @@ Get automatically notified when on printer events:
    <li> Peroidic progress updates </li>
    <li> Error (unrecoverable)</li>
 </ul>
+
+# OctoText plugin installation
+If you can set up an email account you can configure OctoText!
+
+1. Install the plugin via the [Plugin Manager](https://docs.octoprint.org/en/master/bundledplugins/pluginmanager.html)
+2. Choose an existing email or setup a new email account to be used for the plugin. It is recommended that you use a free
+service such as Microsoft's Outlook just for this. The email host will need to allow you to send email
+via an SMTP gateway and you will need this information to set up OctoText. 
+3. Open the settings tab on Octoprint for the OctoText settings and change the default gateway and port 
+for your email hosting service. Outlook uses smtp.office365.com for its gateway and 587 for the port number.
+4. Optionally modify the "Message" setting for the test.
+5. Change the email address and password settings to match the account you setup. The password is stored securely on 
+the OctoPrint server and NEVER transmitted beyond setting up the email connection.
+6. For a text message enter the phone number and SMS gateway(1), for email destination enter the username and host.com address
+7. If you are going to use the webcam - test the snapshot setting first!
+8. Press the test button!
+
+That's it! You will get feedback relatively quickly if the text/email was configured correctly.
+The only error case that we cannot detect easily is a bad destination address of the text or email. 
+
+(1) https://en.wikipedia.org/wiki/SMS_gateway
+
+<img width="128" alt="OctoText" src="/assets/img/plugins/OctoText/iconfinder_13_1236350.png">
