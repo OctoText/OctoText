@@ -14,13 +14,6 @@ OctoText will notify you via text (or email) on common printer events. The curre
 <img width="128" alt="OctoText" src="assets/img/iconfinder_13_1236350.png">
 <p>
 
-### Sample images
-<img width="326" alt="OctoText1" src="assets/img/IMG_6024.PNG"> 
-<img width="326" alt="OctoText2" src="assets/img/IMG_6025.PNG"> 
-</br>
-<img width="640" alt="Recieve Email" src="assets/img/octotext-email.png">
-</p>
-
 ## Setup
 
 Install via the bundled [Plugin Manager](https://docs.octoprint.org/en/master/bundledplugins/pluginmanager.html)
@@ -53,6 +46,13 @@ Once you have gathered all this information you will need to enter it into the s
 also doubles as a test message to check your settings. Just press it once and wait 30 seconds or so and you should see a text or email (if everything is set correctly)
 
 <img width="529" alt="Test button" src="assets/img/test.png">
+
+### Sample images
+<img width="326" alt="OctoText1" src="assets/img/IMG_6024.PNG"> 
+<img width="326" alt="OctoText2" src="assets/img/IMG_6025.PNG"> 
+</br>
+<img width="640" alt="Recieve Email" src="assets/img/octotext-email.png">
+</p>
 
 # Problems?
 If you are having trouble with your setup, you can post on the discussion board and I'll get to your question as soon as I can. Please include a copy of the octoprint log from the logging menu of octoprint. https://github.com/berrystephenw/OctoText/discussions
