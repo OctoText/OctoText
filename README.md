@@ -1,5 +1,5 @@
 # Octotext - Simple, Easy to use, Free text or email notifications 
-<img width="128" alt="OctoText" src="/assets/img/iconfinder_13_1236350.png">
+
 OctoText will notify you via text (or email) on common printer events. The current list of events are:
 <ul>
    <li> File uploaded</li>
@@ -10,9 +10,14 @@ OctoText will notify you via text (or email) on common printer events. The curre
    <li> Peroidic progress updates </li>
    <li> Error (unrecoverable)</li>
 </ul>
+
+<img width="128" alt="OctoText" src="assets/img/iconfinder_13_1236350.png">
 <p>
-<img width="326" alt="OctoText1" src="assets/img/IMG_6013.PNG"> Text to your phone!
-<img width="326" alt="OctoText2" src="assets/img/IMG_6016.PNG"> Email printer events!
+
+### Sample images
+<img width="326" alt="OctoText1" src="assets/img/IMG_6024.PNG"> 
+<img width="326" alt="OctoText2" src="assets/img/IMG_6025.PNG"> 
+</br>
 <img width="640" alt="Recieve Email" src="assets/img/octotext-email.png">
 </p>
 
@@ -47,12 +52,12 @@ In addition to this table, Xfinity Mobile uses mypixmessage.com for SMS/MMS gate
 Once you have gathered all this information you will need to enter it into the settings page on OctoText. The Test Icon on the OctoPrint front page 
 also doubles as a test message to check your settings. Just press it once and wait 30 seconds or so and you should see a text or email (if everything is set correctly)
 
-<img width="326" alt="Screenshot 2021-03-13 215826" src="https://user-images.githubusercontent.com/44931130/111055811-9c043d00-8447-11eb-87b8-fdac8dd1dfff.png">
+<img width="529" alt="Test button" src="assets/img/test.png">
 
 # Problems?
 If you are having trouble with your setup, you can post on the discussion board and I'll get to your question as soon as I can. Please include a copy of the octoprint log from the logging menu of octoprint. https://github.com/berrystephenw/OctoText/discussions
 # Credits
-Gina Häußge https://github.com/foosel for creating Octoprint and the plugin Pushbullet from which some of this plugin is developed from. 
-jneilliii https://github.com/jneilliii for helping me get past some sticky problems in development 
-Charlie Powell https://github.com/cp2004 for answering even the dumbest questions on discord.
+- Gina Häußge https://github.com/foosel for creating Octoprint and the plugin Pushbullet from which some of this plugin is developed from. 
+- jneilliii https://github.com/jneilliii for helping me get past some sticky problems in development 
+- Charlie Powell https://github.com/cp2004 for answering even the dumbest questions on discord.
 
