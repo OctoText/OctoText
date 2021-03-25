@@ -19,7 +19,7 @@ OctoText will notify you via text (or email) on common printer events. The curre
 Install via the bundled [Plugin Manager](https://docs.octoprint.org/en/master/bundledplugins/pluginmanager.html)
 or manually using this URL:
 
-    https://github.com/berrystephenw/Octotext/archive/master.zip (sorry, this is currently not installed!)
+    https://github.com/berrystephenw/OctoText/archive/refs/tags/0.1.0.zip
 
 The plugin needs no special installation.
 

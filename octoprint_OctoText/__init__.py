@@ -443,7 +443,7 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
                     )
                 ],
 				# update method: pip
-				pip="https://github.com/berrystephenw/Octotext/archive/{target_version}.zip"
+				pip="https://github.com/berrystephenw/Octotext/archive/refs/tags/{target_version}.zip"
 			)
 		)
 
