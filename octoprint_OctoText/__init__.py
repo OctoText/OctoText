@@ -432,7 +432,16 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 				user="berrystephenw",
 				repo="Octotext",
 				current=self._plugin_version,
-
+				stable_branch=dict(
+                    name="Stable", branch="main", comittish=["main"]
+                ),
+                prerelease_branches=[
+                    dict(
+                        name="Release Candidate",
+                        branch="rc",
+                        comittish=["rc", "main"],
+                    )
+                ],
 				# update method: pip
 				pip="https://github.com/berrystephenw/Octotext/archive/{target_version}.zip"
 			)
