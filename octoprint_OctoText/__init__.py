@@ -69,7 +69,7 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 			title = "Print Progress"
 			description = str(progress) + " percent finished"
 			noteType = "Status"
-			if self._settings.get(["do_cam_snapshot"]):
+			if self._settings.get(["en_webcam"]):
 				status = self._send_message_with_webcam_image(title, description)
 				if not status:
 					self.smtp_send_message(noteType, title, description)
@@ -180,7 +180,6 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 				+ "\r\n\r\n"
 				+ title + "\r\n" + description)
 
-			login = self._settings.get(["server_login"])
 			try:
 				SMTP_server.sendmail(login, email_addr, message) 
 				SMTP_server.quit()
