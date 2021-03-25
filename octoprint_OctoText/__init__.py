@@ -148,7 +148,7 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 
 			# login to the mail account
 			self._logger.info(login)
-			self._logger.info(passw)
+			#self._logger.info(passw) # not very secure putting this in the logs
 			try:
 				SMTP_server.login(login, passw)
 			except Exception as e:
