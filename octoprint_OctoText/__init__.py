@@ -233,8 +233,7 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 				tempFile.name += ".jpg"
 
 				self._logger.info("Webcam tempfile {}".format(tempFile.name))
-				# flip or rotate as needed - *** commented out for now *****
-				#self._process_snapshot(tempFile)
+				self._process_snapshot(tempFile)
 				result = self._send_file(sender, tempFile.name, filename, title + " " + body)
 				if result == True:
 					try:
