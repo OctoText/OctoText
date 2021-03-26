@@ -9,11 +9,11 @@ authors:
 license: AGPLv3
 
 # TODO
-date: 2021-03-19
+date: 2021-03-26
 
 homepage: https://github.com/berrystephenw/Octotext
 source: https://github.com/berrystephenw/Octotext
-archive: "https://github.com/berrystephenw/OctoText/archive/refs/tags/0.1.0.zip"
+archive: "https://github.com/berrystephenw/OctoText/archive/refs/tags/0.1.2.zip"
 
 # TODO
 # Set this to true if your plugin uses the dependency_links setup parameter to include
@@ -102,7 +102,7 @@ compatibility:
 ---
 # OctoText - Simple, Easy to use, Free text or email notifications 
 OctoText is a notification plugin that will send you a text or email on configurable printer events. All 
-you need is an email account and the printer status - along with a webcam snapshot if configured - will
+you need is an email account! The printer status - along with a webcam snapshot if configured - will
 be sent to you either through email or SMS text message. 
 
 OctoText is not a service, you will never be charged and your information is only stored on the device it
@@ -113,7 +113,6 @@ is installed on and never transmitted anywhere for any reason.
    <li> File uploaded</li>
    <li> Print started</li>
    <li> Print done</li>
-   <li> Timelapse done</li>
    <li> Print failure </li>
    <li> Peroidic progress updates </li>
    <li> Error (unrecoverable)</li>

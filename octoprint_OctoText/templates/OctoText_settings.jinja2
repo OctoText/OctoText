@@ -7,36 +7,40 @@
         <legend>{{ _('Options') }}</legend>
         <label class="checkbox">
             <input type="checkbox" value="pictures with text" data-bind="checked: settings.settings.plugins.OctoText.en_webcam">
-            To get a snapshot of the webcam along with the following events, enable this.
+            Enable Webcam snapshots.
         </label>
         <label class="checkbox">
             <input type="checkbox" value="Print started" data-bind="checked: settings.settings.plugins.OctoText.en_printstart">
-            Get a notification when your print has started. 
+            Print started notification. 
         </label>
         <label class="checkbox">
             <input type="checkbox" value="Print ended" data-bind="checked: settings.settings.plugins.OctoText.en_printend">
-            Get a notification when your print has finished.
+            Print finished notification.
         </label>
         <label class="checkbox">
             <input type="checkbox" value="File uploaded to the printer" data-bind="checked: settings.settings.plugins.OctoText.en_upload">
-            Get a notification when your printer has recieved a file. (does not send a webcam image)
+            File received notification. (does not send a webcam image)
         </label>
         <label class="checkbox">
             <input type="checkbox" value="Printer error" data-bind="checked: settings.settings.plugins.OctoText.en_error">
-            Get a notification when your printer has encountered an error that it cannot recover from!
+            Unrecoverable Error notification.
+        </label>
+        <label class="checkbox">
+            <input type="checkbox" value="Print Failed" data-bind="checked: settings.settings.plugins.OctoText.en_printfail">
+            Print Fail notification.
         </label>
         <label class="checkbox">
             <input type="checkbox" value="Progress notifications" data-bind="checked: settings.settings.plugins.OctoText.en_progress">
-            Get a notification periodically as the print progresses. Also set the progress interval below.
+            Get a notification periodically as the print progresses. Please set the progress interval below when enabled.
         </label>
-
+        
         <div class="control-group">
         <label class="control-label">{{ _('Progress Interval (percentage)') }}</label>
             <div class="controls">
                 <input class="input-mini" type="number" min="1" max="50" data-bind="value: settings.settings.plugins.OctoText.progress_interval" required>
                 <span class="help-block">{% trans %}
                         Set the % interval for texts to be sent during the print. A 5% interval will send a text or email every 5% progress points during the print - 5,10,15% etc intervals.
-                        The maximum frequency is 1% (100 emails or texts!), the minimum is 50% (one email/text at the half way point).
+                        The maximum frequency is 1% (100 emails or texts!), the minimum is 50% (one email/text at the half way point and one at the end).
                     {% endtrans %}
                 </span>
             </div>
@@ -48,7 +52,7 @@
 
         <p class="help-block">{% trans %}
                 Please follow the guide here if you have questions on where to get the information needed below: <a href="https://github.com/berrystephenw/OctoText.git">OctoText Readme</a>
-                Your email provider will have the SMTP port and gateway used for external mail.
+                Your email provider will publish the SMTP port and gateway used for external mail.
             {% endtrans %}
         </p>
 
@@ -71,7 +75,6 @@
                 <input class="input-mini" type="number" min="1" max="999" data-bind="value: settings.settings.plugins.OctoText.smtp_port" required>
                 <span class="help-block">{% trans %}
                         This is the port that your email provider gives you for the SMTP service.
-                        This information it typically found in the settings page of your email provider.
                     {% endtrans %}
                 </span>
             </div>
@@ -107,7 +110,7 @@
                 <input class="input-large" type="text" data-bind="value: settings.settings.plugins.OctoText.server_login" required>
                 <span class="help-block">{% trans %}
                         Enter your email address that you intend to use for OctoText. It is recommended that you set up an email account
-                        only for this app.
+                        that is only used for this app.
                     {% endtrans %}
                 </span>
             </div>

@@ -50,7 +50,8 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 			en_printstart = True,
 			en_printend = True,
 			en_upload = True,
-			en_error = True
+			en_error = True,
+			en_printfail = True
 		)
 
 	def get_api_commands(self):
@@ -365,6 +366,10 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 		do_cam_snapshot = True
 
 		if event == octoprint.events.Events.UPLOAD:
+
+			if not self._settings.get(["en_upload"]):
+    				return
+
 			file = payload["name"]
 			target = payload["path"]
 
@@ -374,6 +379,10 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 			do_cam_snapshot = False # don't really want a snapshot for this
 
 		elif event == octoprint.events.Events.PRINT_STARTED:
+    			
+			if not self._settings.get(["en_printstart"]):
+    				return
+
 			self._logger.info(payload)
 			file = os.path.basename(payload["name"])
 			origin = payload["origin"]
@@ -383,6 +392,10 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 			description = "{file} has started printing {originString}".format(file=file, originString="from SD" if origin == "sd" else "locally")
 
 		elif event == octoprint.events.Events.PRINT_DONE:
+
+			if not self._settings.get(["en_printend"]):
+    				return
+
 			file = os.path.basename(payload["name"])
 			elapsed_time = payload["time"]
 
@@ -391,6 +404,10 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 			description = "{file} finished printing, took {elapsed_time} seconds".format(file=file, elapsed_time=int(elapsed_time))
 		
 		elif event == octoprint.events.Events.ERROR:
+    			
+			if not self._settings.get(["en_error"]):
+    				return
+
 			error = payload["error"]
 
 			noteType = SMTPMessages.ERROR
@@ -398,6 +415,10 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 			description = "{file} {error}".format(file=title, error=error)
 		
 		elif event == octoprint.events.Events.PRINT_FAILED:
+    			
+			if not self._settings.get(["en_printfail"]):
+    				return
+
 			reason = payload["reason"]
 			time = payload["time"]
 			time = str(int(time))
