@@ -65,6 +65,12 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 
 		if progress == 0:
 			return
+
+		# if these two events fire at the same time we have two threads that are async to each other
+		# that try to send notifications at the same time. This has caused both of these threads to fail
+		# on a Pi 4 (not so much on a fast laptop). We default to letting the printend message do the work
+		if progress == 100 and self._settings.get(["en_printend"]):
+			return
 		
 		if progress % int(self._settings.get(["progress_interval"])) == 0:
 			title = "Print Progress"
