@@ -27,7 +27,7 @@ plugin_author = "Stephen Berry"
 plugin_author_email = "sberry@gravity-performance.com"
 
 # The plugin's homepage URL. Can be overwritten within OctoPrint's internal data via __plugin_url__ in the plugin module
-plugin_url = "https://github.com/berrystephenw/Octotext"
+plugin_url = "https://github.com/berrystephenw/OctoText"
 
 # The plugin's license. Can be overwritten within OctoPrint's internal data via __plugin_license__ in the plugin module
 plugin_license = "AGPLv3"
