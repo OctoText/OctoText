@@ -9,7 +9,6 @@ import octoprint.events
 import flask
 import smtplib
 import sarge
-import imghdr
 from email.message import EmailMessage
 from flask_login import current_user
 import datetime
@@ -66,7 +65,7 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 		if progress == 0:
 			return
 
-		# if these two events fire at the same time we have two threads that are async to each other
+		# if these two events fire at the same time (printend and progress at 100%) we have two threads that are async to each other
 		# that try to send notifications at the same time. This has caused both of these threads to fail
 		# on a Pi 4 (not so much on a fast laptop). We default to letting the printend message do the work
 		if progress == 100 and self._settings.get(["en_printend"]):
@@ -451,7 +450,7 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 		# for details.
 		return dict(
 			OctoText=dict(
-				displayName="Octotext Plugin", # should this be self._plugin_name ??
+				displayName="OctoText", # should this be self._plugin_name ??
 				displayVersion=self._plugin_version,
 
 				# version check: github repository
