@@ -317,7 +317,7 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 			# bug on next line: TypeError: sequence item 3: expected str instance, _TemporaryFileWrapper found
 			try:
 				p = sarge.run(ffmpeg_command)
-			except Exception e:
+			except Exception as e:
 				self._logger.info("Exception running ffmpeg {}".format(e))
 				return
 
