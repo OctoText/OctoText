@@ -313,7 +313,7 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 				rotate_params.append("vflip")		# vertical flip
 
 			ffmpeg_command += ["-vf", sarge.shell_quote(",".join(rotate_params)), snapshot_path]
-			self._logger.info("Running: {}".format(" ".join(ffmpeg_command)))
+			#self._logger.info("Running: {}".format(" ".join(ffmpeg_command)))
 
 			p = sarge.run(ffmpeg_command, stdout=sarge.Capture(), stderr=sarge.Capture())
 			if p.returncode == 0:
