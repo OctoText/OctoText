@@ -20,7 +20,8 @@ or manually using this URL:
 
     https://github.com/berrystephenw/OctoText/archive/refs/heads/main.zip
 
-The plugin needs no special installation.
+The plugin <b><i>requires a Python 3 installation in OctoPrint. </i></b>
+If you have an older OctoPrint install and would like to upgrade (after checking to be sure your other plugins are Python 3 compatible) then you can do that by folling the instructions here: https://community.octoprint.org/t/upgrade-your-octoprint-install-to-python-3/23973
 
 ## Configuration
 

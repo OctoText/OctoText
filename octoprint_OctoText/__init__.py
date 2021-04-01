@@ -238,7 +238,7 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 				tempFile.name += ".jpg"
 
 				self._logger.info("Webcam tempfile {}".format(tempFile.name))
-				self._process_snapshot(tempFile)
+				self._process_snapshot(tempFile.name)
 				result = self._send_file(sender, tempFile.name, filename, title + " " + body)
 				if result == True:
 					try:
@@ -313,8 +313,7 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 				rotate_params.append("vflip")		# vertical flip
 
 			ffmpeg_command += ["-vf", sarge.shell_quote(",".join(rotate_params)), snapshot_path]
-			#self._logger.info("Running: {}".format(" ".join(ffmpeg_command)))
-			# bug on next line: TypeError: sequence item 3: expected str instance, _TemporaryFileWrapper found
+			self._logger.info("Running: {}".format(" ".join(ffmpeg_command)))
 			try:
 				p = sarge.run(ffmpeg_command)
 			except Exception as e:
