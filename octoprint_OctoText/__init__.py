@@ -314,8 +314,13 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 
 			ffmpeg_command += ["-vf", sarge.shell_quote(",".join(rotate_params)), snapshot_path]
 			#self._logger.info("Running: {}".format(" ".join(ffmpeg_command)))
+			# bug on next line: TypeError: sequence item 3: expected str instance, _TemporaryFileWrapper found
+			try:
+				p = sarge.run(ffmpeg_command)
+			except Exception e:
+				self._logger.info("Exception running ffmpeg {}".format(e))
+				return
 
-			p = sarge.run(ffmpeg_command, stdout=sarge.Capture(), stderr=sarge.Capture())
 			if p.returncode == 0:
 				self._logger.info("Rotated/flipped image with ffmpeg")
 			else:
