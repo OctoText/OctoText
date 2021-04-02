@@ -89,8 +89,6 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 		# core UI here.
 		return dict(
 			js=["js/OctoText.js"]
-#			css=["css/OctoText.css"],
-#			less=["less/OctoText.less"]
 		)
 
 	def get_template_configs(self):
@@ -238,7 +236,7 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 				tempFile.name += ".jpg"
 
 				self._logger.info("Webcam tempfile {}".format(tempFile.name))
-				self._process_snapshot(tempFile)
+				self._process_snapshot(tempFile.name)
 				result = self._send_file(sender, tempFile.name, filename, title + " " + body)
 				if result == True:
 					try:
@@ -258,6 +256,11 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 
 			if not (error == None):
 				return error
+
+			if body == None:
+				body = self._settings.global_get(["appearance", "name"])
+			
+			self._logger.info("Appearance name (subject): {}".format(self._settings.global_get(["appearance", "name"])))
 
 			login = self._settings.get(["server_login"])
 			msg = EmailMessage()
@@ -292,7 +295,7 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 				return "SENDM_E"
 			return True
 
-	# this is currently not called but should be tested on a Pi (was disabled for debug)
+	# this code will rotate or flip the image based on the webcam settings. borrowed from foosel
 	def _process_snapshot(self, snapshot_path, pixfmt="yuv420p"):
 			hflip  = self._settings.global_get_boolean(["webcam", "flipH"])
 			vflip  = self._settings.global_get_boolean(["webcam", "flipV"])
@@ -313,9 +316,13 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 				rotate_params.append("vflip")		# vertical flip
 
 			ffmpeg_command += ["-vf", sarge.shell_quote(",".join(rotate_params)), snapshot_path]
-			self._logger.info("Running: {}".format(" ".join(ffmpeg_command)))
+			#self._logger.info("Running: {}".format(" ".join(ffmpeg_command)))
+			try:
+				p = sarge.run(ffmpeg_command)
+			except Exception as e:
+				self._logger.info("Exception running ffmpeg {}".format(e))
+				return
 
-			p = sarge.run(ffmpeg_command, stdout=sarge.Capture(), stderr=sarge.Capture())
 			if p.returncode == 0:
 				self._logger.info("Rotated/flipped image with ffmpeg")
 			else:
