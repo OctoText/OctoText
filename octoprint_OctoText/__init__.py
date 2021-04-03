@@ -1,4 +1,15 @@
 # coding=utf-8
+
+# This is the release candidate branch - changes to this version include:
+# updates to the notifications reported:
+#	print paused, resumed
+#	time base notifications instead of % based
+#	more robust sending of notifications if the network fails temporarily (a queue?)
+#	make the icon in the status bar go away, and smaller when it is there
+#	insert the printer name into the reporting
+#
+#	need a way of making sure asynchronous events execute serially through the mail queue
+#		maybe combine multiple events?
 from __future__ import absolute_import
 from octoprint.printer.estimation import PrintTimeEstimator
 
@@ -12,15 +23,6 @@ import sarge
 from email.message import EmailMessage
 from flask_login import current_user
 import datetime
-
-class SMTPMessages(object):
-	TEST = "Connection test"
-	FILE_UPLOADED = "File uploaded"
-	PRINT_STARTED = "Printjob started"
-	PRINT_DONE = "Printjob done"
-	TIMELAPSE_DONE = "Timelapse done"
-	ERROR = "Unrecoverable Printer ERROR"
-	PRINT_FAILED = "Print Fail"
 
 class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 					octoprint.plugin.ProgressPlugin,
@@ -50,7 +52,10 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 			en_printend = True,
 			en_upload = True,
 			en_error = True,
-			en_printfail = True
+			en_printfail = True,
+			en_printpaused = True,
+			en_printresumed = False,
+			show_navbar_button = True
 		)
 
 	def get_api_commands(self):
@@ -166,7 +171,7 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 			return [None, email_addr]
 
 	# initializes the SMTP service, logs into the email server and sends the message to the destination address 
-	def smtp_send_message(self, notetype, title, description):
+	def smtp_send_message(self, subject, title, description):
 
 			# login to the SMTP account and mail server
 			error, email_addr = self.smtp_login_server()
@@ -176,13 +181,16 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 				return error
 
 			# Send text message through SMS gateway of destination number
-			# format the message like an email - can we send emails too?
+			# format the message like an email
 			self._logger.info(email_addr)
 			message = ("From: %s\r\n" % login
 				+ "To: %s" % email_addr +"\r\n"
-				+ "Subject: %s\r\n" % notetype
-				+ "\r\n\r\n"
+				+ "Subject: %s\r\n" % subject
+				+ "\r\n"
 				+ title + "\r\n" + description)
+
+			self._logger.info("Notetype: {}".format(subject))
+			self._logger.info("Message: {}".format(message))
 
 			try:
 				SMTP_server.sendmail(login, email_addr, message) 
@@ -237,7 +245,7 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 
 				self._logger.info("Webcam tempfile {}".format(tempFile.name))
 				self._process_snapshot(tempFile.name)
-				result = self._send_file(sender, tempFile.name, filename, title + " " + body)
+				result = self._send_file(sender, tempFile.name, title, body)
 				if result == True:
 					try:
 						os.remove(tempFile.name)
@@ -249,7 +257,7 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 
 	# format the MMS message - both text and image. As an email there is something not right with the format
 	# the received email doens't have a subject and the attachment is not known to be a jpg...
-	def _send_file(self, sender, path, filename, body):
+	def _send_file(self, sender, path, title, body):
 
 			# login to the SMTP account and mail server
 			error, email_addr = self.smtp_login_server()
@@ -264,12 +272,14 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 
 			login = self._settings.get(["server_login"])
 			msg = EmailMessage()
-			msg['Subject'] = body
+			msg['Subject'] = title
 			msg['From'] = login # 'OctoText@outlook.com'
 			msg['To'] = email_addr
 			msg.preamble = 'You will not see this in a MIME-aware mail reader.\n'
-			msg.set_content("""\
-				Message sent from OctoText!""")
+			content_string = " Message sent from: " + self._settings.global_get(["appearance", "name"]) 
+			msg.set_content(body + content_string)
+			#msg.set_content("""\
+			#	Message sent from OctoText!""")
 			
 			self._logger.info("path for image: {}".format(path))
 
@@ -286,7 +296,7 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 			
 			# Send text message through SMS gateway of destination number/address
 			try:
-				SMTP_server.sendmail(email_addr, email_addr, msg.as_string() )
+				SMTP_server.sendmail(login, email_addr, msg.as_string() )
 				SMTP_server.quit()
 			except Exception as e:
 				self._logger.exception(
@@ -316,7 +326,7 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 				rotate_params.append("vflip")		# vertical flip
 
 			ffmpeg_command += ["-vf", sarge.shell_quote(",".join(rotate_params)), snapshot_path]
-			#self._logger.info("Running: {}".format(" ".join(ffmpeg_command)))
+			self._logger.info("Running: {}".format(" ".join(ffmpeg_command)))
 			try:
 				p = sarge.run(ffmpeg_command)
 			except Exception as e:
@@ -339,8 +349,7 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 
 			try:
 				self._logger.info("Sending text with image")
-				result = self._send_message_with_webcam_image("Test from the OctoText Plugin.", self._settings.get(["smtp_message"]), 
-					sender="OctoText")
+				result = self._send_message_with_webcam_image("Test from the OctoText Plugin.", self._settings.get(["smtp_message"]), sender="OctoText")
 			except Exception as e:
 				self._logger.exception("Exception while sending text, {message}".format(message=str(e)))
 				return flask.make_response(flask.jsonify(result=False, error="SMTP"))
@@ -358,7 +367,7 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 	## testing logging and proper startup of passed values in settings forms
 	def on_after_startup(self):
 			self._logger.info("--------------------------------------------")
-			self._logger.info("OctoText started")
+			self._logger.info("OctoText started: {}".format(self._plugin_version))
 			self._logger.info("SMTP Name: {}, SMTP port: {}, SMTP message: {}, server login: {}".format(
 						self._settings.get(["smtp_name"]),
 						self._settings.get(["smtp_port"]),
@@ -374,6 +383,7 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 		import os
 
 		noteType = title = description = None
+		printer_name = self._settings.global_get(["appearance", "name"])
 
 		do_cam_snapshot = True
 
@@ -385,7 +395,7 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 			file = payload["name"]
 			target = payload["path"]
 
-			noteType = SMTPMessages.FILE_UPLOADED
+			noteType = "File uploaded from" + printer_name
 			title = "A new file was uploaded"
 			description = "{file} was uploaded {targetString}".format(file=file, targetString="to SD" if target == "sd" else "locally")
 			do_cam_snapshot = False # don't really want a snapshot for this
@@ -399,7 +409,7 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 			file = os.path.basename(payload["name"])
 			origin = payload["origin"]
 
-			noteType = SMTPMessages.PRINT_STARTED
+			noteType = "Print job started on: " + printer_name
 			title = "A new print job was started"
 			description = "{file} has started printing {originString}".format(file=file, originString="from SD" if origin == "sd" else "locally")
 
@@ -411,7 +421,7 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 			file = os.path.basename(payload["name"])
 			elapsed_time = payload["time"]
 
-			noteType = SMTPMessages.PRINT_DONE
+			noteType = "Print job finished on: " + printer_name
 			title = "Print job finished"
 			description = "{file} finished printing, took {elapsed_time} seconds".format(file=file, elapsed_time=int(elapsed_time))
 		
@@ -422,9 +432,9 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 
 			error = payload["error"]
 
-			noteType = SMTPMessages.ERROR
+			noteType = "Printer ERROR: " + printer_name
 			title = "Unrecoverable Error!"
-			description = "{file} {error}".format(file=title, error=error)
+			description = "{file} {error}".format(file=noteType, error=error)
 		
 		elif event == octoprint.events.Events.PRINT_FAILED:
     			
@@ -435,17 +445,43 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 			time = payload["time"]
 			time = str(int(time))
 
-			noteType = SMTPMessages.PRINT_FAILED
+			noteType = "Print failed on: " + printer_name
 			title = "Print Fail " + time
-			description = "{file} {error}".format(file=title, error=reason)
+			description = "{file} {error}".format(file=noteType, error=reason)
+		
+		elif event == octoprint.events.Events.PRINT_PAUSED:
+    			
+			if not self._settings.get(["en_printpaused"]):
+    				return
 
-		if noteType is None:
+			reason = payload["name"]
+			user = payload["user"]
+			time = datetime.datetime.now().isoformat(sep=' ',timespec='minutes')
+
+			noteType = "Print Paused on: " + printer_name
+			title = "Print Paused " + user + " at " + time
+			description = "{} {}".format(noteType, reason)
+			self._logger.info("Print paused args notetype: {}, name:{}, title {}, description {}".format(noteType, reason, title, description))
+
+		elif event == octoprint.events.Events.PRINT_RESUMED:
+    			
+			if not self._settings.get(["en_printresumed"]):
+    				return
+
+			reason = payload["name"]
+			user = payload["user"]
+			time = datetime.datetime.now().isoformat(sep=' ',timespec='minutes')
+
+			noteType = "Print resumed on: " + printer_name
+			title = "Print resumed by " + user + " at " + time
+			description = "{} {}".format(noteType, reason)
+			self._logger.info("Print resumed args notetype: {}, name:{}, title {}, description {}".format(noteType, reason, title, description))
+
+		if noteType == None:
 			return
 
 		if do_cam_snapshot:
-			status = self._send_message_with_webcam_image(title, description)
-			if not status:
-				self.smtp_send_message(noteType, title, description)
+			self._send_message_with_webcam_image(title, description, sender=printer_name)
 		else:
 			self.smtp_send_message(noteType, title, description)
 
