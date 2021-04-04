@@ -4,8 +4,10 @@ OctoText will notify you via text (or email) on common printer events. The curre
 <ul>
    <li> File uploaded</li>
    <li> Print started</li>
-   <li> Print done</li>
+   <li> Print finished</li>
    <li> Print failure </li>
+   <li> Print pause </li>
+   <li> Print resume </li>
    <li> Peroidic progress updates </li>
    <li> Error (unrecoverable)</li>
 </ul>
