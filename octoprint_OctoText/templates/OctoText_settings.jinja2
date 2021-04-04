@@ -30,6 +30,14 @@
             Print Fail notification.
         </label>
         <label class="checkbox">
+            <input type="checkbox" value="Print Paused" data-bind="checked: settings.settings.plugins.OctoText.en_printpaused">
+            Print Pause notification. Can be used for filament runout conditions.
+        </label>
+        <label class="checkbox">
+            <input type="checkbox" value="Print Resumed" data-bind="checked: settings.settings.plugins.OctoText.en_printresumed">
+            Print Resume notification.
+        </label>
+        <label class="checkbox">
             <input type="checkbox" value="Progress notifications" data-bind="checked: settings.settings.plugins.OctoText.en_progress">
             Get a notification periodically as the print progresses. Please set the progress interval below when enabled.
         </label>
@@ -151,6 +159,11 @@
                 </span>
             </div>
         </div>
+
+        <label class="checkbox">
+            <input type="checkbox" value="Progress notifications" data-bind="checked: settings.settings.plugins.OctoText.show_navbar_button">
+            Enable the test icon (an envelope) on the top of the navigation bar.
+        </label>
 
         <div class="control-group">
             <div class="controls">
