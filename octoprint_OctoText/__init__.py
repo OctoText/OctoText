@@ -77,13 +77,12 @@ class OctoTextPlugin(octoprint.plugin.EventHandlerPlugin,
 			return
 		
 		if progress % int(self._settings.get(["progress_interval"])) == 0:
+			printer_name = self._settings.global_get(["appearance", "name"])
 			title = "Print Progress"
 			description = str(progress) + " percent finished"
-			noteType = "Status"
+			noteType = "Status from: " + printer_name
 			if self._settings.get(["en_webcam"]):
-				status = self._send_message_with_webcam_image(title, description)
-				if not status:
-					self.smtp_send_message(noteType, title, description)
+				self._send_message_with_webcam_image(title, description, sender=printer_name)
 			else:
 				self.smtp_send_message(noteType, title, description)
 
