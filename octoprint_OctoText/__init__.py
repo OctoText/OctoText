@@ -517,7 +517,7 @@ class OctoTextPlugin(
             time = str(int(time))
 
             noteType = "Print failed on: " + printer_name
-            title = "Print Fail " + time
+            title = "Print Fail after " + time + " seconds"
             description = f"{noteType} {reason}"
 
         elif event == octoprint.events.Events.PRINT_PAUSED:
