@@ -217,13 +217,13 @@ class OctoTextPlugin(
         return True
 
     # send an image with the message. have to watch for errors connecting to the camera
-    def _send_message_with_webcam_image(self, title, body, filename=None, sender=None):
+    def _send_message_with_webcam_image(
+        self, title, body, filename=None, sender=None, thumbnail=None
+    ):
 
         self._logger.info(
             "Enable webcam setting {}".format(self._settings.get(["en_webcam"]))
         )
-        if not self._settings.get(["en_webcam"]):
-            return self.smtp_send_message(sender, title, body)
 
         if filename is None:
             import random
@@ -235,6 +235,12 @@ class OctoTextPlugin(
 
         if sender is None:
             sender = "OctoText"
+
+        if thumbnail is not None:
+            return self._send_file(sender, thumbnail, title, body)
+
+        if not self._settings.get(["en_webcam"]):
+            return self.smtp_send_message(sender, title, body)
 
         snapshot_url = self._settings.global_get(["webcam", "snapshot"])
         webcam_stream_url = self._settings.global_get(["webcam", "stream"])
@@ -441,19 +447,73 @@ class OctoTextPlugin(
         # )
         # self._printer.pause_print()
 
+    # borrowed from @jneilliii
+    def _extract_thumbnail(self, gcode_filename, thumbnail_filename):
+        import base64
+        import re
+
+        regex = r"(?:^; thumbnail begin \d+x\d+ \d+)(?:\n|\r\n?)((?:.+(?:\n|\r\n?))+?)(?:^; thumbnail end)"
+        lineNum = 0
+        collectedString = ""
+        with open(gcode_filename, "rb") as gcode_file:
+            for line in gcode_file:
+                lineNum += 1
+                line = line.decode("utf-8", "ignore")
+                gcode = octoprint.util.comm.gcode_command_for_cmd(line)
+                extrusionMatch = octoprint.util.comm.regexes_parameters["floatE"].search(
+                    line
+                )
+                if gcode == "G1" and extrusionMatch:
+                    self._logger.debug(
+                        "Line %d: Detected first extrusion. Read complete.", lineNum
+                    )
+                    break
+                if line.startswith(";") or line.startswith("\n"):
+                    collectedString += line
+            self._logger.debug(collectedString)
+            test_str = collectedString.replace(
+                octoprint.util.to_native_str("\r\n"),
+                octoprint.util.to_native_str("\n"),
+            )
+        test_str = test_str.replace(
+            octoprint.util.to_native_str(";\n;\n"),
+            octoprint.util.to_native_str(";\n\n;\n"),
+        )
+        matches = re.findall(regex, test_str, re.MULTILINE)
+        if len(matches) > 0:
+            path = os.path.dirname(thumbnail_filename)
+            if not os.path.exists(path):
+                os.makedirs(path)
+            with open(thumbnail_filename, "wb") as png_file:
+                png_file.write(
+                    base64.b64decode(matches[-1:][0].replace("; ", "").encode())
+                )
+
+    # ~~ callback for printer pause initiated by the printer (very specific to MMU/Prusa)
+
+    def AlertWaitingForUser(self, comm, line, *args, **kwargs):
+        if "echo:busy: paused for user" in line:
+            payload = ["name", "printer"], ["user", "system"]
+            self.on_event(octoprint.events.Events.PRINT_PAUSED, payload)
+        return line
+
     # ~~ EventPlugin API
 
     def on_event(self, event, payload):
+        last_thumbnail_upload = None
 
         noteType = title = description = None
         printer_name = self._settings.global_get(["appearance", "name"])
 
         do_cam_snapshot = True
+        thumbnail_filename = None
 
         # self._logger.info(f"event received: {event}")
 
         if event == octoprint.events.Events.UPLOAD:
-
+            self._logger.info(
+                f"Upload event - thumbnail filename {last_thumbnail_upload}"
+            )
             if not self._settings.get(["en_upload"]):
                 return
 
@@ -481,6 +541,23 @@ class OctoTextPlugin(
             description = "{file} has started printing {originString}".format(
                 file=file, originString="from SD" if origin == "sd" else "locally"
             )
+            thumbnail_filename = (
+                self.get_plugin_data_folder()
+                + "/"
+                + payload["path"].replace(".gcode", ".png")
+            )
+
+            gcode_filename = self._file_manager.path_on_disk("local", payload["path"])
+            self._extract_thumbnail(gcode_filename, thumbnail_filename)
+            self._logger.info(f"thumbnail filename {thumbnail_filename}")
+            if os.path.exists(thumbnail_filename):
+                self._logger.info("thumbnail exists!")
+                # thumbnail_url = (
+                #    "plugin/OctoText/thumbnail/"
+                #    + payload["path"].replace(".gcode", ".png")
+                #    + "?"
+                #    + f"{datetime.datetime.now():%Y%m%d%H%M%S}"
+                # )
 
         elif event == octoprint.events.Events.PRINT_DONE:
 
@@ -571,12 +648,57 @@ class OctoTextPlugin(
                     noteType, reason, title, description
                 )
             )
+        elif event == "FolderRemoved" and payload["storage"] == "local":
+            import shutil
+
+            shutil.rmtree(
+                self.get_plugin_data_folder() + "/" + payload["path"], ignore_errors=True
+            )
+        elif (
+            event in ["FileAdded", "FileRemoved"]
+            and payload["storage"] == "local"
+            and "gcode" in payload["type"]
+        ):
+            thumbnail_filename = (
+                self.get_plugin_data_folder()
+                + "/"
+                + payload["path"].replace(".gcode", ".png")
+            )
+            if os.path.exists(thumbnail_filename):
+                os.remove(thumbnail_filename)
+            if event == "FileAdded":
+                gcode_filename = self._file_manager.path_on_disk("local", payload["path"])
+                self._extract_thumbnail(gcode_filename, thumbnail_filename)
+                self._logger.info(f"thumbnail filename {thumbnail_filename}")
+                if os.path.exists(thumbnail_filename):
+                    thumbnail_url = (
+                        "plugin/OctoText/thumbnail/"
+                        + payload["path"].replace(".gcode", ".png")
+                        + "?"
+                        + f"{datetime.datetime.now():%Y%m%d%H%M%S}"
+                    )
+                    self._file_manager.set_additional_metadata(
+                        "local",
+                        payload["path"],
+                        "thumbnail",
+                        thumbnail_url.replace("//", "/"),
+                        overwrite=True,
+                    )
+                    self._file_manager.set_additional_metadata(
+                        "local",
+                        payload["path"],
+                        "thumbnail_src",
+                        self._identifier,
+                        overwrite=True,
+                    )
 
         if noteType is None:
             return
 
         if do_cam_snapshot:
-            self._send_message_with_webcam_image(title, description, sender=printer_name)
+            self._send_message_with_webcam_image(
+                title, description, sender=printer_name, thumbnail=thumbnail_filename
+            )
         else:
             self.smtp_send_message(noteType, title, description)
 
@@ -624,4 +746,5 @@ def __plugin_load__():
     global __plugin_hooks__
     __plugin_hooks__ = {
         "octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information,
+        "octoprint.comm.protocol.gcode.received": __plugin_implementation__.AlertWaitingForUser,
     }
