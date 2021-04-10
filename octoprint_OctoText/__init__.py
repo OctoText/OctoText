@@ -21,6 +21,8 @@ from flask_login import current_user
 
 # from octoprint.printer.estimation import PrintTimeEstimator
 
+last_fired = None
+
 
 class OctoTextPlugin(
     octoprint.plugin.EventHandlerPlugin,
@@ -490,10 +492,21 @@ class OctoTextPlugin(
                 )
 
     # ~~ callback for printer pause initiated by the printer (very specific to MMU/Prusa)
+    # to test the strings being received by the Pi put this in the console: !!DEBUG:send echo:busy: paused for user
 
     def AlertWaitingForUser(self, comm, line, *args, **kwargs):
+        global last_fired
+        if last_fired is not None:
+            right_now = datetime.datetime.now()
+            how_long = right_now - last_fired
+            self._logger.info(
+                f"last fired {last_fired}, right_now {right_now} seconds {how_long.seconds}"
+            )
+            if how_long.seconds < 600:  # 10 minute time out
+                return line
         if "echo:busy: paused for user" in line:
-            payload = ["name", "printer"], ["user", "system"]
+            last_fired = datetime.datetime.now()
+            payload = dict([("name", "printer"), ("user", "system")])
             self.on_event(octoprint.events.Events.PRINT_PAUSED, payload)
         return line
 
@@ -520,7 +533,7 @@ class OctoTextPlugin(
             file = payload["name"]
             target = payload["path"]
 
-            noteType = "File uploaded from" + printer_name
+            noteType = "File uploaded from " + printer_name
             title = "A new file was uploaded"
             description = "{file} was uploaded {targetString}".format(
                 file=file, targetString="to SD" if target == "sd" else "locally"
@@ -551,13 +564,9 @@ class OctoTextPlugin(
             self._extract_thumbnail(gcode_filename, thumbnail_filename)
             self._logger.info(f"thumbnail filename {thumbnail_filename}")
             if os.path.exists(thumbnail_filename):
-                self._logger.info("thumbnail exists!")
-                # thumbnail_url = (
-                #    "plugin/OctoText/thumbnail/"
-                #    + payload["path"].replace(".gcode", ".png")
-                #    + "?"
-                #    + f"{datetime.datetime.now():%Y%m%d%H%M%S}"
-                # )
+                self._logger.info("thumbnail exists! using image in notifications")
+            else:
+                thumbnail_filename = None
 
         elif event == octoprint.events.Events.PRINT_DONE:
 
@@ -616,7 +625,7 @@ class OctoTextPlugin(
             time = datetime.datetime.now().isoformat(sep=" ", timespec="minutes")
 
             noteType = "Print Paused on: " + printer_name
-            title = "Print Paused " + user + " at " + time
+            title = "Print Paused by " + user + " at " + time
             description = f"{noteType} {reason}"
             self._logger.info(
                 "Print paused args notetype: {}, name:{}, title {}, description {}".format(
