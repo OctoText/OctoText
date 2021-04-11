@@ -1,4 +1,4 @@
-# Octotext - Simple, Easy to use, Free text or email notifications
+# OctoText - Simple, Easy to use, Free text or email notifications
 
 OctoText will notify you via text (or email) on common printer events. The current list of events are:
 <ul>
@@ -8,9 +8,13 @@ OctoText will notify you via text (or email) on common printer events. The curre
    <li> Print failure </li>
    <li> Print pause </li>
    <li> Print resume </li>
-   <li> Peroidic progress updates </li>
+   <li> Periodic progress updates </li>
    <li> Error (unrecoverable)</li>
 </ul>
+
+OctoText will also include a thumbnail of your print if it is sent with the file (PrusaSlicer and Cura). The thumbnail will
+only be sent on a print START event.
+Print Pausing detection has been enhanced so that it detects "waiting for user messages" that are sent by Prusa MMU equipped printers.
 
 <img width="128" alt="OctoText" src="assets/img/iconfinder_13_1236350.png">
 <p>
@@ -23,7 +27,7 @@ or manually using this URL:
     https://github.com/berrystephenw/OctoText/archive/refs/heads/main.zip
 
 The plugin <b><i>requires a Python 3 installation in OctoPrint. </i></b>
-If you have an older OctoPrint install and would like to upgrade (after checking to be sure your other plugins are Python 3 compatible) then you can do that by folling the instructions here: https://community.octoprint.org/t/upgrade-your-octoprint-install-to-python-3/23973
+If you have an older OctoPrint install and would like to upgrade (after checking to be sure your other plugins are Python 3 compatible) then you can do that by following the instructions here: https://community.octoprint.org/t/upgrade-your-octoprint-install-to-python-3/23973
 
 ## Configuration
 
@@ -53,11 +57,12 @@ also doubles as a test message to check your settings. Just press it once and wa
 <img width="326" alt="OctoText1" src="assets/img/IMG_6024.PNG">
 <img width="326" alt="OctoText2" src="assets/img/IMG_6025.PNG">
 <br>
-<img width="640" alt="Recieve Email" src="assets/img/octotext-email.png">
+<img width="640" alt="Receive Email" src="assets/img/octotext-email.png">
 <br>
 
 # Problems?
-If you are having trouble with your setup, you can post on the discussion board and I'll get to your question as soon as I can. Please include a copy of the octoprint log from the logging menu of octoprint. https://github.com/berrystephenw/OctoText/discussions
+If you are having trouble with your setup you can post on the discussion board, and I'll get to your question as soon as I can.
+Please include a copy of the octoprint log from the logging menu of octoprint. https://github.com/berrystephenw/OctoText/discussions
 # Credits
 - Gina Häußge https://github.com/foosel for creating Octoprint and the plugin Pushbullet from which some of this plugin is developed from.
 - jneilliii https://github.com/jneilliii for helping me get past some sticky problems in development
