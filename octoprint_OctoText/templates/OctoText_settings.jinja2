@@ -11,7 +11,7 @@
         </label>
         <label class="checkbox">
             <input type="checkbox" value="Print started" data-bind="checked: settings.settings.plugins.OctoText.en_printstart">
-            Print started notification. 
+            Print started notification.
         </label>
         <label class="checkbox">
             <input type="checkbox" value="Print ended" data-bind="checked: settings.settings.plugins.OctoText.en_printend">
@@ -33,6 +33,18 @@
             <input type="checkbox" value="Print Paused" data-bind="checked: settings.settings.plugins.OctoText.en_printpaused">
             Print Pause notification. Can be used for filament runout conditions.
         </label>
+        <div class="control-group">
+        <label class="control-label">{{ _('Pause interval timeout (seconds)') }}</label>
+            <div class="controls">
+                <input class="input-mini" type="number" min="0" max="600" data-bind="value: settings.settings.plugins.OctoText.mmu_timeout" required>
+                <span class="help-block">{% trans %}
+                        This parameter is used only for Prusa MMU equipped printers that want to detect filament load failures.
+                        Enter a value greater than 30, units are in seconds. Values less than 30 disable the timeout. On detection of a
+                        pause event a timer is started and no further events are generated until the timer expires.
+                    {% endtrans %}
+                </span>
+            </div>
+        </div>
         <label class="checkbox">
             <input type="checkbox" value="Print Resumed" data-bind="checked: settings.settings.plugins.OctoText.en_printresumed">
             Print Resume notification.
@@ -41,7 +53,7 @@
             <input type="checkbox" value="Progress notifications" data-bind="checked: settings.settings.plugins.OctoText.en_progress">
             Get a notification periodically as the print progresses. Please set the progress interval below when enabled.
         </label>
-        
+
         <div class="control-group">
         <label class="control-label">{{ _('Progress Interval (percentage)') }}</label>
             <div class="controls">
@@ -69,8 +81,8 @@
             <div class="controls">
                 <input class="input-large" type="text" data-bind="value: settings.settings.plugins.OctoText.smtp_name" required>
                 <span class="help-block">{% trans %}
-                        This is the email gateway that is used to send the message. You must use a service that allows for SMTP connections. Some 
-                        free services do not allow you to connect via an outside client. 
+                        This is the email gateway that is used to send the message. You must use a service that allows for SMTP connections. Some
+                        free services do not allow you to connect via an outside client.
                         This information it typically found in the settings page of your email provider.
                     {% endtrans %}
                 </span>
@@ -105,7 +117,7 @@
                 <input class="input-large" type="text" data-bind="value: settings.settings.plugins.OctoText.smtp_alert">
                 <span class="help-block">{% trans %}
                         The alert message subject. Mostly for testing. OctoText will create a subject heading based on the type
-                        of message being sent. 
+                        of message being sent.
                         *Currently not used*
                     {% endtrans %}
                 </span>
@@ -129,7 +141,7 @@
             <div class="controls">
                 <input class="input-large" type="password" data-bind="value: settings.settings.plugins.OctoText.server_pass" required>
                 <span class="help-block">{% trans %}
-                        This is the password for your email account.  
+                        This is the password for your email account.
                     {% endtrans %}
                 </span>
             </div>
@@ -141,7 +153,7 @@
                 <input class="input-large" type="text" data-bind="value: settings.settings.plugins.OctoText.phone_numb" required>
                 <span class="help-block">{% trans %}
                         Enter the phone number of the recipient to text (usually your mobile phone). If you are sending an email, Enter
-                        the user name (ie Octotext of Octotext@outlook.com). 
+                        the user name (ie Octotext of Octotext@outlook.com).
                     {% endtrans %}
                 </span>
             </div>
@@ -152,9 +164,9 @@
             <div class="controls">
                 <input class="input-large" type="text" data-bind="value: settings.settings.plugins.OctoText.carrier_address" required>
                 <span class="help-block">{% trans %}
-                        This is the email address that carriers use to route to their SMS service. An example would be vtext.com for Verizon. 
+                        This is the email address that carriers use to route to their SMS service. An example would be vtext.com for Verizon.
                         Please see the link at the top of the page for more information on how to find this address for your provider. If you are
-                        sending an email, put the host name here (ie outlook.com) 
+                        sending an email, put the host name here (ie outlook.com)
                     {% endtrans %}
                 </span>
             </div>
@@ -167,12 +179,12 @@
 
         <div class="control-group">
             <div class="controls">
-                <button class="btn btn-primary" data-bind="click: sendTestMessage, enable: !busy(), css: {disabled: busy()}"><i class="icon-spinner icon-spin" data-bind="visible: busy"></i> {{ _('Send a test message') }}</button>            
+                <button class="btn btn-primary" data-bind="click: sendTestMessage, enable: !busy(), css: {disabled: busy()}"><i class="icon-spinner icon-spin" data-bind="visible: busy"></i> {{ _('Send a test message') }}</button>
                 <span class="help-block">{% trans %}
                         <strong>Test your Snapshot webcam settings first before testing!</strong>
                         *You may need to save this settings page before any modifications are active*
                         Once you have filled in all of the required entries you can use the test button to immediately send a text.
-                        You can also use the button in the navigation bar to send a text (with picture if enabled) at any time.  
+                        You can also use the button in the navigation bar to send a text (with picture if enabled) at any time.
                     {% endtrans %}
                 </span>
             </div>

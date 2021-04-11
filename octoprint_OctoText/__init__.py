@@ -59,6 +59,7 @@ class OctoTextPlugin(
             en_printpaused=True,
             en_printresumed=False,
             show_navbar_button=True,
+            mmu_timeout=0,
         )
 
     def get_api_commands(self):
@@ -500,15 +501,21 @@ class OctoTextPlugin(
         if last_fired is not None:
             right_now = datetime.datetime.now()
             how_long = right_now - last_fired
-            self._logger.debug(
-                f"last fired {last_fired}, right_now {right_now} seconds {how_long.seconds}"
-            )
-            if how_long.seconds < 600:  # 10 minute time out
+            # self._logger.debug(
+            #    f"last fired {last_fired}, right_now {right_now} seconds {how_long.seconds}"
+            # )
+            mmutimeout = int(self._settings.get(["mmu_timeout"]))
+            # any setting less than 30 seconds disables the check
+            if mmutimeout < 30:
+                return line
+            if how_long.seconds < mmutimeout:
                 return line
         if "echo:busy: paused for user" in line:
-            last_fired = datetime.datetime.now()
-            payload = dict([("name", "printer"), ("user", "system")])
-            self.on_event(octoprint.events.Events.PRINT_PAUSED, payload)
+            self._logger.info(f"State ID: {self._printer.get_state_id()}")
+            if self._printer.get_state_id() == "PRINTING":
+                last_fired = datetime.datetime.now()
+                payload = dict([("name", "printer"), ("user", "system")])
+                self.on_event(octoprint.events.Events.PRINT_PAUSED, payload)
         return line
 
     # ~~ EventPlugin API
