@@ -55,11 +55,14 @@ class OctoTextPlugin(
             en_printend=True,
             en_upload=True,
             en_error=True,
-            en_printfail=True,
+            en_printfail=False,
+            en_printcancel=False,
             en_printpaused=True,
             en_printresumed=False,
             show_navbar_button=True,
+            show_fail_cancel=False,
             mmu_timeout=0,
+            use_ssl=False,
         )
 
     def get_api_commands(self):
@@ -152,10 +155,14 @@ class OctoTextPlugin(
         # setup the server with the SMTP address/port
         try:
             self._logger.debug("before server smtplib")
-            SMTP_server = smtplib.SMTP(name, port)
+            if self._settings.get(["use_ssl"]):
+                SMTP_server = smtplib.SMTP_SSL(name, port)
+                SMTP_server.ehlo()
+            else:
+                SMTP_server = smtplib.SMTP(name, port)
+                error = SMTP_server.starttls()
+                self._logger.debug(f"startttls() {error}")
             self._logger.debug(f"SMTP_server {SMTP_server}")
-            error = SMTP_server.starttls()
-            self._logger.debug(f"startttls() {error}")
         except Exception as e:
             self._logger.exception(
                 "Exception while talking to your mail server {message}".format(
@@ -222,7 +229,7 @@ class OctoTextPlugin(
 
     # send an image with the message. have to watch for errors connecting to the camera
     def _send_message_with_webcam_image(
-        self, title, body, filename=None, sender=None, thumbnail=None
+        self, title, body, filename=None, sender=None, thumbnail=None, send_image=True
     ):
 
         self._logger.debug(
@@ -243,8 +250,10 @@ class OctoTextPlugin(
         if thumbnail is not None:
             return self._send_file(sender, thumbnail, title, body)
 
-        if not self._settings.get(["en_webcam"]):
-            return self.smtp_send_message(sender, title, body)
+        if self._settings.get(["en_webcam"]) is False or send_image is False:
+            return self._send_file(
+                sender, "", title, body
+            )  # TODO change this to use _send_file?
 
         snapshot_url = self._settings.global_get(["webcam", "snapshot"])
         webcam_stream_url = self._settings.global_get(["webcam", "stream"])
@@ -253,7 +262,7 @@ class OctoTextPlugin(
         self._logger.debug(
             f"Webcam URL is: {webcam_stream_url}, Snapshot URL is: {snapshot_url}"
         )
-        if snapshot_url:
+        if snapshot_url and send_image:
             try:
                 import tempfile
 
@@ -601,18 +610,48 @@ class OctoTextPlugin(
             title = "Unrecoverable Error!"
             description = f"{noteType} {error}"
 
+        elif event == octoprint.events.Events.PRINT_CANCELLED:
+
+            if not self._settings.get(["en_printcancel"]):
+                return
+
+            settingc = self._settings.get(["en_printcancel"])
+            settingf = self._settings.get(["en_printfail"])
+            self._logger.debug(
+                f"Event received: {event}, print cancel setting: {settingc}, fail: {settingf}"
+            )
+            name = payload["name"]
+            path = payload["path"]  # may not need path
+            try:
+                user = payload["user"]
+            except Exception:
+                user = "system"
+
+            noteType = "Print canceled, filename: " + name
+            title = "Print canceled by " + user
+            description = f" - {noteType} {path}"
+
         elif event == octoprint.events.Events.PRINT_FAILED:
 
             if not self._settings.get(["en_printfail"]):
                 return
 
+            settingc = self._settings.get(["en_printcancel"])
+            settingf = self._settings.get(["en_printfail"])
+            self._logger.debug(
+                f"Event received: {event}, print cancel setting: {settingc}, fail: {settingf}"
+            )
+            self._logger.debug(f"Event received: {event}")
             reason = payload["reason"]
+            name = payload["name"]
             time = payload["time"]
-            time = str(int(time))
+            time = str(int(time))  # time is a float
 
-            noteType = "Print failed on: " + printer_name
+            # Print failed on: Prusa MK3S+ MMU2s cancelled Message sent from: Prusa MK3S+ MMU2s
+            # TODO fix the poorly formatted message above
+            noteType = "Print failed, filename: " + name
             title = "Print Fail after " + time + " seconds"
-            description = f"{noteType} {reason}"
+            description = f" - {noteType} {reason}"
 
         elif event == octoprint.events.Events.PRINT_PAUSED:
 
@@ -712,12 +751,19 @@ class OctoTextPlugin(
         if noteType is None:
             return
 
-        if do_cam_snapshot:
-            self._send_message_with_webcam_image(
-                title, description, sender=printer_name, thumbnail=thumbnail_filename
-            )
-        else:
-            self.smtp_send_message(noteType, title, description)
+        self._send_message_with_webcam_image(
+            title,
+            description,
+            sender=printer_name,
+            thumbnail=thumbnail_filename,
+            send_image=do_cam_snapshot,
+        )
+        # if do_cam_snapshot:
+        #    self._send_message_with_webcam_image(
+        #        title, description, sender=printer_name, thumbnail=thumbnail_filename
+        #    )
+        # else:
+        #    self.smtp_send_message(noteType, title, description)
 
     ##~~ UFP upload preprocessor hook - totally stolen from @jneillliii
 

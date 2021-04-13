@@ -26,9 +26,17 @@
             Unrecoverable Error notification.
         </label>
         <label class="checkbox">
-            <input type="checkbox" value="Print Failed" data-bind="checked: settings.settings.plugins.OctoText.en_printfail">
-            Print Fail notification.
+            <input type="checkbox" value="Print Failed/Print Canceled" data-bind="checked: settings.settings.plugins.OctoText.show_fail_cancel">
+            Print Fail OR Cancel notification.
         </label>
+        <label class="radio" data-bind="visible: settings.settings.plugins.OctoText.show_fail_cancel()">
+            <input type="radio" name="optionsRadios" id="optionsRadios1" data-bind="checked: settings.settings.plugins.OctoText.en_printfail" checked>
+            Enable Print Failure notifications
+            </label>
+        <label class="radio" data-bind="visible: settings.settings.plugins.OctoText.show_fail_cancel()">
+          <input type="radio" name="optionsRadios" id="optionsRadios2" data-bind="checked: settings.settings.plugins.OctoText.en_printcancel">
+            Enable Print Cancel notifications
+            </label>
         <label class="checkbox">
             <input type="checkbox" value="Print Paused" data-bind="checked: settings.settings.plugins.OctoText.en_printpaused">
             Print Pause notification. Can be used for filament runout conditions.
@@ -98,6 +106,10 @@
                     {% endtrans %}
                 </span>
             </div>
+            <label class="checkbox">
+                <input type="checkbox" value="Print Paused" data-bind="checked: settings.settings.plugins.OctoText.use_ssl">
+                TLS is the default protocol (typically uses port 587), checking this box will use SSL (usual port is 465).
+            </label>
         </div>
 
         <div class="control-group">
