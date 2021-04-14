@@ -56,7 +56,6 @@ class OctoTextPlugin(
             en_upload=True,
             en_error=True,
             en_printfail=False,
-            en_printcancel=False,
             en_printpaused=True,
             en_printresumed=False,
             show_navbar_button=True,
@@ -550,8 +549,8 @@ class OctoTextPlugin(
             file = payload["name"]
             target = payload["path"]
 
-            noteType = "File uploaded from " + printer_name
-            title = "A new file was uploaded"
+            noteType = True
+            title = "A file was uploaded "
             description = "{file} was uploaded {targetString}".format(
                 file=file, targetString="to SD" if target == "sd" else "locally"
             )
@@ -566,8 +565,8 @@ class OctoTextPlugin(
             file = os.path.basename(payload["name"])
             origin = payload["origin"]
 
-            noteType = "Print job started on: " + printer_name
-            title = "A new print job was started"
+            noteType = True
+            title = "Print job started"
             description = "{file} has started printing {originString}".format(
                 file=file, originString="from SD" if origin == "sd" else "locally"
             )
@@ -593,7 +592,7 @@ class OctoTextPlugin(
             file = os.path.basename(payload["name"])
             elapsed_time = payload["time"]
 
-            noteType = "Print job finished on: " + printer_name
+            noteType = True
             title = "Print job finished"
             description = "{file} finished printing, took {elapsed_time} seconds".format(
                 file=file, elapsed_time=int(elapsed_time)
@@ -606,52 +605,47 @@ class OctoTextPlugin(
 
             error = payload["error"]
 
-            noteType = "Printer ERROR: " + printer_name
-            title = "Unrecoverable Error!"
-            description = f"{noteType} {error}"
+            noteType = True
+            title = "Printer ERROR!"
+            description = f" {error}"
 
         elif event == octoprint.events.Events.PRINT_CANCELLED:
 
-            if not self._settings.get(["en_printcancel"]):
+            if not self._settings.get(["show_fail_cancel"]):
+                return
+            if self._settings.get(["en_printfail"]) == "Fail":
                 return
 
-            settingc = self._settings.get(["en_printcancel"])
             settingf = self._settings.get(["en_printfail"])
-            self._logger.debug(
-                f"Event received: {event}, print cancel setting: {settingc}, fail: {settingf}"
-            )
+            self._logger.debug(f"Event received: {event}, print fail: {settingf}")
             name = payload["name"]
-            path = payload["path"]  # may not need path
             try:
                 user = payload["user"]
             except Exception:
                 user = "system"
 
-            noteType = "Print canceled, filename: " + name
+            noteType = True
             title = "Print canceled by " + user
-            description = f" - {noteType} {path}"
+            description = f"file: {name}"
 
         elif event == octoprint.events.Events.PRINT_FAILED:
 
-            if not self._settings.get(["en_printfail"]):
+            if not self._settings.get(["show_fail_cancel"]):
+                return
+            if self._settings.get(["en_printfail"]) == "Cancel":
                 return
 
-            settingc = self._settings.get(["en_printcancel"])
             settingf = self._settings.get(["en_printfail"])
-            self._logger.debug(
-                f"Event received: {event}, print cancel setting: {settingc}, fail: {settingf}"
-            )
-            self._logger.debug(f"Event received: {event}")
+            self._logger.debug(f"Event received: {event}, print fail: {settingf}")
             reason = payload["reason"]
             name = payload["name"]
             time = payload["time"]
             time = str(int(time))  # time is a float
 
             # Print failed on: Prusa MK3S+ MMU2s cancelled Message sent from: Prusa MK3S+ MMU2s
-            # TODO fix the poorly formatted message above
-            noteType = "Print failed, filename: " + name
+            noteType = True
             title = "Print Fail after " + time + " seconds"
-            description = f" - {noteType} {reason}"
+            description = f"{reason} name: {name}"
 
         elif event == octoprint.events.Events.PRINT_PAUSED:
 
@@ -671,9 +665,9 @@ class OctoTextPlugin(
 
             time = datetime.datetime.now().isoformat(sep=" ", timespec="minutes")
 
-            noteType = "Print Paused on: " + printer_name
+            noteType = True
             title = "Print Paused by " + user + " at " + time
-            description = f"{noteType} {reason}"
+            description = f" {reason}"
             self._logger.debug(
                 "Print paused args notetype: {}, name:{}, title {}, description {}".format(
                     noteType, reason, title, description
@@ -696,9 +690,9 @@ class OctoTextPlugin(
 
             time = datetime.datetime.now().isoformat(sep=" ", timespec="minutes")
 
-            noteType = "Print resumed on: " + printer_name
-            title = "Print resumed by " + user + " at " + time
-            description = f"{noteType} {reason}"
+            noteType = True
+            title = "Resumed by " + user + " at " + time
+            description = f"{reason}"
             self._logger.debug(
                 "Print resumed args notetype: {}, name:{}, title {}, description {}".format(
                     noteType, reason, title, description

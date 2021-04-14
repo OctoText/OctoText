@@ -30,11 +30,11 @@
             Print Fail OR Cancel notification.
         </label>
         <label class="radio" data-bind="visible: settings.settings.plugins.OctoText.show_fail_cancel()">
-            <input type="radio" name="optionsRadios" id="optionsRadios1" data-bind="checked: settings.settings.plugins.OctoText.en_printfail" checked>
+            <input type="radio" name="optionsRadios" id="optionsRadios1" value="Fail" data-bind="checked: settings.settings.plugins.OctoText.en_printfail" checked>
             Enable Print Failure notifications
             </label>
         <label class="radio" data-bind="visible: settings.settings.plugins.OctoText.show_fail_cancel()">
-          <input type="radio" name="optionsRadios" id="optionsRadios2" data-bind="checked: settings.settings.plugins.OctoText.en_printcancel">
+          <input type="radio" name="optionsRadios" id="optionsRadios2" value="Cancel" data-bind="checked: settings.settings.plugins.OctoText.en_printfail">
             Enable Print Cancel notifications
             </label>
         <label class="checkbox">
