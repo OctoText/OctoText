@@ -12,6 +12,7 @@ import datetime
 import os
 import smtplib
 from email.message import EmailMessage
+from email.utils import formatdate
 from zipfile import ZipFile
 
 import flask
@@ -250,9 +251,7 @@ class OctoTextPlugin(
             return self._send_file(sender, thumbnail, title, body)
 
         if self._settings.get(["en_webcam"]) is False or send_image is False:
-            return self._send_file(
-                sender, "", title, body
-            )  # TODO change this to use _send_file?
+            return self._send_file(sender, "", title, body)
 
         snapshot_url = self._settings.global_get(["webcam", "snapshot"])
         webcam_stream_url = self._settings.global_get(["webcam", "stream"])
@@ -319,6 +318,7 @@ class OctoTextPlugin(
         msg["Subject"] = title
         msg["From"] = login  # 'OctoText@outlook.com'
         msg["To"] = email_addr
+        msg["Date"] = formatdate(localtime=True)
         msg.preamble = "You will not see this in a MIME-aware mail reader.\n"
         content_string = " Message sent from: " + self._settings.global_get(
             ["appearance", "name"]
