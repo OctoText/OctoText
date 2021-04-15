@@ -1,1 +1,1 @@
-<button class="btn btn-primary" data-bind="click: sendTestMessage, enable: !busy(), css: {disabled: busy()}"><i class="icon-spinner icon-spin" data-bind="visible: busy"></i> {{ _('Send a test message') }}</button>            
+<button class="btn" data-bind="click: sendTestMessage, enable: !busy(), css: {disabled: busy()}, visible: settings.settings.plugins.OctoText.show_navbar_button()"><i class="icon-spinner icon-spin" data-bind="visible: busy"></i> <i class="icon-envelope icon-white"></i></button>
