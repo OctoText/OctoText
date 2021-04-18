@@ -39,10 +39,10 @@
             </label>
         <label class="checkbox">
             <input type="checkbox" value="Print Paused" data-bind="checked: settings.settings.plugins.OctoText.en_printpaused">
-            Print Pause notification. Can be used for filament runout conditions.
+            Print Pause notification. Can be used for filament run-out conditions.
         </label>
-        <div class="control-group">
-        <label class="control-label">{{ _('Pause interval timeout (seconds)') }}</label>
+        <div class="control-group" data-bind="visible: settings.settings.plugins.OctoText.en_printpaused()">
+        <label class="control-label" >{{ _('Pause interval timeout (seconds)') }}</label>
             <div class="controls">
                 <input class="input-mini" type="number" min="0" max="600" data-bind="value: settings.settings.plugins.OctoText.mmu_timeout" required>
                 <span class="help-block">{% trans %}
@@ -62,7 +62,7 @@
             Get a notification periodically as the print progresses. Please set the progress interval below when enabled.
         </label>
 
-        <div class="control-group">
+        <div class="control-group" data-bind="visible: settings.settings.plugins.OctoText.en_progress()">
         <label class="control-label">{{ _('Progress Interval (percentage)') }}</label>
             <div class="controls">
                 <input class="input-mini" type="number" min="1" max="50" data-bind="value: settings.settings.plugins.OctoText.progress_interval" required>
@@ -123,7 +123,7 @@
             </div>
         </div>
 
-        <div class="control-group">
+        <div class="control-group" data-bind="visible: false" >
             <label class="control-label">{{ _('Subject') }}</label>
             <div class="controls">
                 <input class="input-large" type="text" data-bind="value: settings.settings.plugins.OctoText.smtp_alert">
