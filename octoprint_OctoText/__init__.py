@@ -86,7 +86,7 @@ class OctoTextPlugin(
         if progress % int(self._settings.get(["progress_interval"])) == 0:
             printer_name = self._settings.global_get(["appearance", "name"])
             title = "Print Progress "
-            description = str(progress) + " percent finished."
+            description = str(progress) + " percent finished. "
             # noteType = "Status from: " + printer_name
             if self._settings.get(["en_webcam"]):
                 self._send_message_with_webcam_image(
