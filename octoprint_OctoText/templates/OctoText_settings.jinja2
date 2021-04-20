@@ -39,14 +39,14 @@
             </label>
         <label class="checkbox">
             <input type="checkbox" value="Print Paused" data-bind="checked: settings.settings.plugins.OctoText.en_printpaused">
-            Print Pause notification. Can be used for filament runout conditions.
+            Print Pause notification. Can be used for filament run-out conditions.
         </label>
-        <div class="control-group">
-        <label class="control-label">{{ _('Pause interval timeout (seconds)') }}</label>
+        <div class="control-group" data-bind="visible: settings.settings.plugins.OctoText.en_printpaused()">
+        <label class="control-label" >{{ _('Pause interval timeout (seconds)') }}</label>
             <div class="controls">
                 <input class="input-mini" type="number" min="0" max="600" data-bind="value: settings.settings.plugins.OctoText.mmu_timeout" required>
                 <span class="help-block">{% trans %}
-                        This parameter is used only for Prusa MMU equipped printers that want to detect filament load failures.
+                        This parameter is used for Prusa printers to detect filament load failures.
                         Enter a value greater than 30, units are in seconds. Values less than 30 disable the timeout. On detection of a
                         pause event a timer is started and no further events are generated until the timer expires.
                     {% endtrans %}
@@ -62,7 +62,7 @@
             Get a notification periodically as the print progresses. Please set the progress interval below when enabled.
         </label>
 
-        <div class="control-group">
+        <div class="control-group" data-bind="visible: settings.settings.plugins.OctoText.en_progress()">
         <label class="control-label">{{ _('Progress Interval (percentage)') }}</label>
             <div class="controls">
                 <input class="input-mini" type="number" min="1" max="50" data-bind="value: settings.settings.plugins.OctoText.progress_interval" required>
@@ -108,7 +108,7 @@
             </div>
             <label class="checkbox">
                 <input type="checkbox" value="Print Paused" data-bind="checked: settings.settings.plugins.OctoText.use_ssl">
-                TLS is the default protocol (typically uses port 587), checking this box will use SSL (usual port is 465).
+                Checking this box will force SSL encryption (the usual port is 465). TLS is the default protocol (typically uses port 587).
             </label>
         </div>
 
@@ -123,7 +123,7 @@
             </div>
         </div>
 
-        <div class="control-group">
+        <div class="control-group" data-bind="visible: false" >
             <label class="control-label">{{ _('Subject') }}</label>
             <div class="controls">
                 <input class="input-large" type="text" data-bind="value: settings.settings.plugins.OctoText.smtp_alert">
@@ -160,27 +160,21 @@
         </div>
 
         <div class="control-group">
-            <label class="control-label">{{ _('Phone number/user name') }}</label>
+            <label class="control-label">{{ _('Phone number OR user name @ Gateway OR Email address') }}</label>
             <div class="controls">
-                <input class="input-large" type="text" data-bind="value: settings.settings.plugins.OctoText.phone_numb" required>
-                <span class="help-block">{% trans %}
-                        Enter the phone number of the recipient to text (usually your mobile phone). If you are sending an email, Enter
-                        the user name (ie Octotext of Octotext@outlook.com).
-                    {% endtrans %}
-                </span>
-            </div>
-        </div>
-
-        <div class="control-group">
-            <label class="control-label">{{ _('Carrier SMS gateway/email address') }}</label>
-            <div class="controls">
-                <input class="input-large" type="text" data-bind="value: settings.settings.plugins.OctoText.carrier_address" required>
-                <span class="help-block">{% trans %}
-                        This is the email address that carriers use to route to their SMS service. An example would be vtext.com for Verizon.
-                        Please see the link at the top of the page for more information on how to find this address for your provider. If you are
-                        sending an email, put the host name here (ie outlook.com)
-                    {% endtrans %}
-                </span>
+                <form class="form-inline">
+                    <input class="input-small" type="text" data-bind="value: settings.settings.plugins.OctoText.phone_numb" required placeholder="6038675309">
+                    <span class="add-on">@</span>
+                    <input class="input-large" type="text" data-bind="value: settings.settings.plugins.OctoText.carrier_address" required placeholder="gateway.com">
+                    <span class="help-block">{% trans %}
+                            Enter the phone number of the recipient of the text (usually your mobile phone) OR If you are sending an email, Enter
+                            the <b>user name</b> (ie Octotext of Octotext@outlook.com). The second field is the host gateway address that carriers use to
+                            route messages to their SMS service OR a destination email host name. A gateway example would be vtext.com for Verizon.
+                            Please see the link at the top of the page for more information on how to find this address for your provider. If you are
+                            sending an email, put the host name here (ie outlook.com)
+                        {% endtrans %}
+                    </span>
+                </form>
             </div>
         </div>
 

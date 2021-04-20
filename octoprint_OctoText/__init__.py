@@ -85,15 +85,18 @@ class OctoTextPlugin(
 
         if progress % int(self._settings.get(["progress_interval"])) == 0:
             printer_name = self._settings.global_get(["appearance", "name"])
-            title = "Print Progress"
-            description = str(progress) + " percent finished"
-            noteType = "Status from: " + printer_name
+            title = "Print Progress "
+            description = str(progress) + " percent finished. "
+            # noteType = "Status from: " + printer_name
             if self._settings.get(["en_webcam"]):
                 self._send_message_with_webcam_image(
                     title, description, sender=printer_name
                 )
             else:
-                self.smtp_send_message(noteType, title, description)
+                self._send_message_with_webcam_image(
+                    title, description, sender=printer_name, send_image=False
+                )
+                # self.smtp_send_message(noteType, title, description)
 
     ##~~ AssetPlugin mixin
 
@@ -254,12 +257,10 @@ class OctoTextPlugin(
             return self._send_file(sender, "", title, body)
 
         snapshot_url = self._settings.global_get(["webcam", "snapshot"])
-        webcam_stream_url = self._settings.global_get(["webcam", "stream"])
+        # webcam_stream_url = self._settings.global_get(["webcam", "stream"])
         result = True
         self._logger.debug(f"filename for image: {filename}")
-        self._logger.debug(
-            f"Webcam URL is: {webcam_stream_url}, Snapshot URL is: {snapshot_url}"
-        )
+        self._logger.debug(f"Snapshot URL is: {snapshot_url}")
         if snapshot_url and send_image:
             try:
                 import tempfile
@@ -308,24 +309,22 @@ class OctoTextPlugin(
         if not (error is None):
             return error
 
+        appearance_name = self._settings.global_get(["appearance", "name"])
         if body is None:
-            body = self._settings.global_get(["appearance", "name"])
+            body = ""
 
-        self._logger.debug(f"Appearance name (subject): {body}")
+        self._logger.debug(f"Appearance name (subject): {appearance_name}")
 
         login = self._settings.get(["server_login"])
         msg = EmailMessage()
-        msg["Subject"] = title
+        msg["Subject"] = appearance_name + ": " + title
         msg["From"] = login  # 'OctoText@outlook.com'
         msg["To"] = email_addr
         msg["Date"] = formatdate(localtime=True)
-        msg.preamble = "You will not see this in a MIME-aware mail reader.\n"
-        content_string = " Message sent from: " + self._settings.global_get(
-            ["appearance", "name"]
-        )
-        msg.set_content(body + content_string)
-        # msg.set_content("""\
-        # 	Message sent from OctoText!""")
+        content_string = " Message sent from: " + sender
+        msg.set_content(
+            body + content_string, charset="utf-8"
+        )  # experiment with charset ~ascii
 
         self._logger.debug(f"path for image: {path}")
 
@@ -567,7 +566,7 @@ class OctoTextPlugin(
 
             noteType = True
             title = "Print job started"
-            description = "{file} has started printing {originString}".format(
+            description = "{file} has started printing {originString}.".format(
                 file=file, originString="from SD" if origin == "sd" else "locally"
             )
             thumbnail_filename = (
@@ -594,7 +593,7 @@ class OctoTextPlugin(
 
             noteType = True
             title = "Print job finished"
-            description = "{file} finished printing, took {elapsed_time} seconds".format(
+            description = "{file} finished printing, took {elapsed_time} seconds.".format(
                 file=file, elapsed_time=int(elapsed_time)
             )
 
@@ -645,14 +644,14 @@ class OctoTextPlugin(
             # Print failed on: Prusa MK3S+ MMU2s cancelled Message sent from: Prusa MK3S+ MMU2s
             noteType = True
             title = "Print Fail after " + time + " seconds"
-            description = f"{reason} name: {name}"
+            description = f"{reason} file: {name}"
 
         elif event == octoprint.events.Events.PRINT_PAUSED:
 
             if not self._settings.get(["en_printpaused"]):
                 return
 
-            reason = payload["name"]
+            pay_name = payload["name"]
             # when a plugin initiates a pause, there is no user and an exception is thrown
             # when accessing the keyword
             try:
@@ -667,10 +666,13 @@ class OctoTextPlugin(
 
             noteType = True
             title = "Print Paused by " + user + " at " + time
-            description = f" {reason}"
+            if pay_name == "printer":
+                description = "Pause for user detected. Out of Filament?"
+            else:
+                description = f"file: {pay_name}"
             self._logger.debug(
                 "Print paused args notetype: {}, name:{}, title {}, description {}".format(
-                    noteType, reason, title, description
+                    noteType, pay_name, title, description
                 )
             )
 
@@ -679,7 +681,7 @@ class OctoTextPlugin(
             if not self._settings.get(["en_printresumed"]):
                 return
 
-            reason = payload["name"]
+            pay_name = payload["name"]
             try:
                 user = payload["user"]
             except Exception:
@@ -692,10 +694,10 @@ class OctoTextPlugin(
 
             noteType = True
             title = "Resumed by " + user + " at " + time
-            description = f"{reason}"
+            description = f"file: {pay_name}"
             self._logger.debug(
                 "Print resumed args notetype: {}, name:{}, title {}, description {}".format(
-                    noteType, reason, title, description
+                    noteType, pay_name, title, description
                 )
             )
         elif event == "FolderRemoved" and payload["storage"] == "local":
