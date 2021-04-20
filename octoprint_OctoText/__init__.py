@@ -1,13 +1,11 @@
-# This is the release candidate branch - changes to this version include:
+# This is the main branch - changes to this version include:
 # updates to the notifications reported:
 # 	print paused, resumed
-# 	time base notifications instead of % based
-# 	more robust sending of notifications if the network fails temporarily (a queue?)
 # 	make the icon in the status bar go away, and smaller when it is there
 # 	insert the printer name into the reporting
+#   SSL encryption added.
+#   settings form changed to make it easier to understand.
 #
-# 	need a way of making sure asynchronous events execute serially through the mail queue
-# 		maybe combine multiple events?
 import datetime
 import os
 import smtplib
@@ -96,7 +94,6 @@ class OctoTextPlugin(
                 self._send_message_with_webcam_image(
                     title, description, sender=printer_name, send_image=False
                 )
-                # self.smtp_send_message(noteType, title, description)
 
     ##~~ AssetPlugin mixin
 
@@ -176,7 +173,6 @@ class OctoTextPlugin(
 
         # login to the mail account
         self._logger.debug(login)
-        # self._logger.debug(passw) # not very secure putting this in the logs
         try:
             SMTP_server.login(login, passw)
         except Exception as e:
@@ -192,6 +188,7 @@ class OctoTextPlugin(
         return [None, email_addr]
 
     # initializes the SMTP service, logs into the email server and sends the message to the destination address
+    # this code no longer used - will be deleted soon.
     def smtp_send_message(self, subject, title, description):
 
         # login to the SMTP account and mail server
@@ -257,7 +254,6 @@ class OctoTextPlugin(
             return self._send_file(sender, "", title, body)
 
         snapshot_url = self._settings.global_get(["webcam", "snapshot"])
-        # webcam_stream_url = self._settings.global_get(["webcam", "stream"])
         result = True
         self._logger.debug(f"filename for image: {filename}")
         self._logger.debug(f"Snapshot URL is: {snapshot_url}")
@@ -324,7 +320,7 @@ class OctoTextPlugin(
         content_string = " Message sent from: " + sender
         msg.set_content(
             body + content_string, charset="utf-8"
-        )  # experiment with charset ~ascii
+        )  # utf-8 allows non ascii characters in the test string
 
         self._logger.debug(f"path for image: {path}")
 
@@ -433,13 +429,6 @@ class OctoTextPlugin(
 
         return flask.make_response(flask.jsonify(result=result, error=error))
 
-    #    def printer_status_callback(self, _):
-    #        result = True
-    #        # result = octoprint.printer.PrinterInterface.is_paused(self)
-    #        if result:
-    #            self._logger.debug("*** Printer callback paused ***")
-    #        return
-
     # testing logging and proper startup of passed values in settings forms
     def on_after_startup(self):
         self._logger.info("--------------------------------------------")
@@ -453,10 +442,6 @@ class OctoTextPlugin(
             )
         )
         self._logger.info("--------------------------------------------")
-        # octoprint.printer.PrinterInterface.register_callback(
-        #    self, callback=self.printer_status_callback(self)
-        # )
-        # self._printer.pause_print()
 
     # borrowed from @jneilliii
     def _extract_thumbnail(self, gcode_filename, thumbnail_filename):
@@ -500,7 +485,7 @@ class OctoTextPlugin(
                     base64.b64decode(matches[-1:][0].replace("; ", "").encode())
                 )
 
-    # ~~ callback for printer pause initiated by the printer (very specific to MMU/Prusa)
+    # ~~ callback for printer pause initiated by the printer (very specific to Prusa)
     # to test the strings being received by the Pi put this in the console: !!DEBUG:send echo:busy: paused for user
 
     def AlertWaitingForUser(self, comm, line, *args, **kwargs):
@@ -754,12 +739,6 @@ class OctoTextPlugin(
             thumbnail=thumbnail_filename,
             send_image=do_cam_snapshot,
         )
-        # if do_cam_snapshot:
-        #    self._send_message_with_webcam_image(
-        #        title, description, sender=printer_name, thumbnail=thumbnail_filename
-        #    )
-        # else:
-        #    self.smtp_send_message(noteType, title, description)
 
     ##~~ UFP upload preprocessor hook - totally stolen from @jneillliii
 
@@ -852,12 +831,9 @@ class OctoTextPlugin(
         )
 
 
-# If you want your plugin to be registered within OctoPrint under a different name than what you defined in setup.py
-# ("OctoPrint-PluginSkeleton"), you may define that here. Same goes for the other metadata derived from setup.py that
-# can be overwritten via __plugin_xyz__ control properties. See the documentation for that.
 __plugin_name__ = "OctoText"
 
-__plugin_pythoncompat__ = ">=3,<4"  # only python 3
+__plugin_pythoncompat__ = ">=3,<4"  # only python 3+
 
 
 def __plugin_load__():
