@@ -55,12 +55,12 @@ SSL and TLS protocols are supported - you must enable SSL if you need to use it 
 If you would rather receive email notifications in place of a text, then you should simply enter the user name and host address in the
 destination fields instead of the phone/gateway entries:
 
-<img width="529" alt="Email setting" src="assets/img/email.png">
+<img width="300" alt="Email setting" src="assets/img/email.png">
 
-Once you have gathered all this information you will need to enter it into the settings page on OctoText. The Test Icon on the OctoPrint front page
+Once you have gathered all this information you will need to enter it into the settings page on OctoText. The envelope Icon on the OctoPrint front page
 also doubles as a test message to check your settings. Just press it once and wait 30 seconds or so and you should see a text or email (if everything is set correctly)
 
-<img width="529" alt="Test button" src="assets/img/test.png">
+<img width="313" alt="Test button" src="assets/img/test.png">
 
 ### Sample images
 <img width="326" alt="OctoText1" src="assets/img/IMG_6024.PNG">
