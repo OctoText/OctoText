@@ -15,7 +15,7 @@ OctoText will notify you via text (or email) on common printer events. The curre
 
 OctoText will also include a thumbnail of your print if it is sent with the file (PrusaSlicer and Cura). The thumbnail will
 only be sent on a print START event.
-Print Pausing detection has been enhanced so that it detects "waiting for user messages" that are sent by Prusa MMU equipped printers.
+Print Pausing detection has been enhanced so that it detects "waiting for user messages" that are sent by Prusa printers.
 
 <img width="128" alt="OctoText" src="assets/img/iconfinder_13_1236350.png">
 <p>
@@ -34,10 +34,10 @@ If you have an older OctoPrint install and would like to upgrade (after checking
 
 In order to configure OctoText you have to use an email account to send the messages from.
 I use the free email service from Microsoft - Outlook.com. I created the email address octotext@outlook.com for the development of the plugin
-and it works well. You should NOT use an email account that you care about - the plugin may not be secure and while that will change in the future
+and it works well. You should NOT use an email account that you care about - the plugin may not be secure and while that will change in the future,
 right now your password could be exposed to anyone that knows what to look for and has access to your machine.
 
-Once you have the email account you want to use, you will need the SMTP server of the account. For Outlook you can find that under
+Once you have the email account you want to use, you will need the SMTP server settings of that account. For Outlook you can find that under
 Settings->sync settings:
 
 <img width="735" alt="Outlook settings" src="https://user-images.githubusercontent.com/44931130/111056048-df5fab00-8449-11eb-8aa8-4807493750d9.png">
@@ -48,8 +48,14 @@ cover most users:
 <img width="368" alt="SMS gateway" src="https://user-images.githubusercontent.com/44931130/111055919-a7a43380-8448-11eb-836d-40a9706d7d51.png">
 
 In addition to this table, Xfinity Mobile uses mypixmessage.com for SMS/MMS gateway. This table was taken from: https://en.wikipedia.org/wiki/SMS_gateway please refer to Wikipedia for more up to date information.
+Another resource for SMS gateways is the international site found here: https://sms-gateway-service.com/sms-gateway-by-country/
 
-SSL and TLS protocols are supported - while SSL needs testing and may have issues.
+SSL and TLS protocols are supported - you must enable SSL if you need to use it for your provider (TLS is the default).
+
+If you would rather receive email notifications in place of a text, then you should simply enter the user name and host address in the
+destination fields instead of the phone/gateway entries:
+
+<img width="529" alt="Email setting" src="assets/img/email.png">
 
 Once you have gathered all this information you will need to enter it into the settings page on OctoText. The Test Icon on the OctoPrint front page
 also doubles as a test message to check your settings. Just press it once and wait 30 seconds or so and you should see a text or email (if everything is set correctly)

@@ -321,11 +321,10 @@ class OctoTextPlugin(
         msg["From"] = login  # 'OctoText@outlook.com'
         msg["To"] = email_addr
         msg["Date"] = formatdate(localtime=True)
-        # msg.preamble = "You will not see this in a MIME-aware mail reader.\n"
         content_string = " Message sent from: " + sender
-        msg.set_content(body + content_string)
-        # msg.set_content("""\
-        # 	Message sent from OctoText!""")
+        msg.set_content(
+            body + content_string, charset="utf-8"
+        )  # experiment with charset ~ascii
 
         self._logger.debug(f"path for image: {path}")
 
