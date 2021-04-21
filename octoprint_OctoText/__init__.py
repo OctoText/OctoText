@@ -521,8 +521,6 @@ class OctoTextPlugin(
         do_cam_snapshot = True
         thumbnail_filename = None
 
-        # self._logger.debug(f"event received: {event}")
-
         if event == octoprint.events.Events.UPLOAD:
             self._logger.debug(
                 f"Upload event - thumbnail filename {last_thumbnail_upload}"
@@ -626,7 +624,6 @@ class OctoTextPlugin(
             time = payload["time"]
             time = str(int(time))  # time is a float
 
-            # Print failed on: Prusa MK3S+ MMU2s cancelled Message sent from: Prusa MK3S+ MMU2s
             noteType = True
             title = "Print Fail after " + time + " seconds"
             description = f"{reason} file: {name}"
