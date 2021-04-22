@@ -15,7 +15,8 @@ OctoText will notify you via text (or email) on common printer events. The curre
 
 OctoText will also include a thumbnail of your print if it is sent with the file (PrusaSlicer and Cura). The thumbnail will
 only be sent on a print START event.
-Print Pausing detection has been enhanced so that it detects "waiting for user messages" that are sent by Prusa printers.
+Print Pausing detection has been enhanced so that it detects "waiting for user messages" that are sent by Prusa printers
+on filament run out conditions.
 
 <img width="128" alt="OctoText" src="assets/img/iconfinder_13_1236350.png">
 <p>
