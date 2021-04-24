@@ -1,5 +1,8 @@
 # OctoText - Simple, Easy to use, Free text or email notifications
 
+![GitHub Downloads](https://badgen.net/github/assets-dl/berrystephenw/OctoText/)
+![GitHub all releases](https://img.shields.io/github/downloads/berrystephenw/OctoText/total)
+
 OctoText will notify you via text (or email) on common printer events. The current list of events are:
 <ul>
    <li> File uploaded</li>
@@ -14,7 +17,11 @@ OctoText will notify you via text (or email) on common printer events. The curre
 </ul>
 
 OctoText will also include a thumbnail of your print if it is sent with the file (PrusaSlicer and Cura). The thumbnail will
-only be sent on a print START event.
+only be sent on a print START event. *As of right now Cura uploads from the Octoprint plugin do not work*. Uploading a file
+directly to Octoprint will work with 0.2.1rc1 and later. I will be changing
+tactics for thumbnail support in the near future to use Prusa and Cura thumbnail plug-ins when they are installed. This
+will give a better user experience and have support for direct uploads from Cura.
+
 Print Pausing detection has been enhanced so that it detects "waiting for user messages" that are sent by Prusa printers
 on filament run out conditions.
 

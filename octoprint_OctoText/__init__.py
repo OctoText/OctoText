@@ -688,6 +688,13 @@ class OctoTextPlugin(
             shutil.rmtree(
                 self.get_plugin_data_folder() + "/" + payload["path"], ignore_errors=True
             )
+        elif event == "FileAdded" and "ufp" in payload["type"]:
+            old_name = payload["path"]
+            ufp_file = self.get_plugin_data_folder() + "/" + payload["path"]
+            if os.path.exists(ufp_file):
+                os.remove(ufp_file)
+            self._file_manager.remove_file("local", old_name)
+            return
         elif (
             event in ["FileAdded", "FileRemoved"]
             and payload["storage"] == "local"
@@ -698,8 +705,9 @@ class OctoTextPlugin(
                 + "/"
                 + payload["path"].replace(".gcode", ".png")
             )
-            if os.path.exists(thumbnail_filename):
-                os.remove(thumbnail_filename)
+            if event == "FileRemoved":
+                if os.path.exists(thumbnail_filename):
+                    os.remove(thumbnail_filename)
             if event == "FileAdded":
                 gcode_filename = self._file_manager.path_on_disk("local", payload["path"])
                 self._extract_thumbnail(gcode_filename, thumbnail_filename)
@@ -737,6 +745,11 @@ class OctoTextPlugin(
             send_image=do_cam_snapshot,
         )
 
+    ##-- UFP upload extenstion tree hook
+
+    def get_extension_tree(self, *args, **kwargs):
+        return dict(machinecode=dict(ufp=["ufp"]))
+
     ##~~ UFP upload preprocessor hook - totally stolen from @jneillliii
 
     def ufp_upload(
@@ -760,7 +773,14 @@ class OctoTextPlugin(
             if not os.path.exists(ufp_filepath):
                 os.makedirs(ufp_filepath)
 
+            if os.path.exists(png_filename):
+                self._logger.debug(f"thumbnail {png_filename} removed")
+                os.remove(png_filename)
+
             file_object.save(ufp_filename)
+            self._logger.debug(
+                f"Ufp_filename: {ufp_filename} png_filename: {png_filename}"
+            )
             with ZipFile(ufp_filename, "r") as zipObj:
                 try:
                     with open(png_filename, "wb") as thumbnail:
@@ -842,4 +862,5 @@ def __plugin_load__():
         "octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information,
         "octoprint.comm.protocol.gcode.received": __plugin_implementation__.AlertWaitingForUser,
         "octoprint.filemanager.preprocessor": __plugin_implementation__.ufp_upload,
+        "octoprint.filemanager.extension_tree": __plugin_implementation__.get_extension_tree,
     }
