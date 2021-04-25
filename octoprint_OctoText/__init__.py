@@ -11,7 +11,6 @@ import os
 import smtplib
 from email.message import EmailMessage
 from email.utils import formatdate
-from zipfile import ZipFile
 
 import flask
 import octoprint.events
@@ -19,9 +18,12 @@ import octoprint.plugin
 import sarge
 from flask_login import current_user
 
-# from octoprint.printer.estimation import PrintTimeEstimator
-
+# a few globals to save time checking for the existence of plugins
 last_fired = None
+prusa_plugin = False
+cura_plugin = False
+prusa_folder = ""
+cura_folder = ""
 
 
 class OctoTextPlugin(
@@ -66,6 +68,12 @@ class OctoTextPlugin(
     def get_api_commands(self):
         return dict(test=["token"])
 
+    def get_printer_name(self):
+        a_name = self._settings.global_get(["appearance", "name"])
+        if a_name == "":
+            a_name = "OctoText"
+        return a_name
+
     # ~~ PrintProgressPlugin
 
     def on_print_progress(self, storage, path, progress):
@@ -82,7 +90,7 @@ class OctoTextPlugin(
             return
 
         if progress % int(self._settings.get(["progress_interval"])) == 0:
-            printer_name = self._settings.global_get(["appearance", "name"])
+            printer_name = self.get_printer_name()
             title = "Print Progress "
             description = str(progress) + " percent finished. "
             # noteType = "Status from: " + printer_name
@@ -187,46 +195,6 @@ class OctoTextPlugin(
         email_addr = phone_numb + "@%s" % carrier_addr
         return [None, email_addr]
 
-    # initializes the SMTP service, logs into the email server and sends the message to the destination address
-    # this code no longer used - will be deleted soon.
-    def smtp_send_message(self, subject, title, description):
-
-        # login to the SMTP account and mail server
-        error, email_addr = self.smtp_login_server()
-        login = self._settings.get(["server_login"])
-
-        if not (error is None):
-            return error
-
-        # Send text message through SMS gateway of destination number
-        # format the message like an email
-        self._logger.debug(email_addr)
-        message = (
-            "From: %s\r\n" % login
-            + "To: %s" % email_addr
-            + "\r\n"
-            + "Subject: %s\r\n" % subject
-            + "\r\n"
-            + title
-            + "\r\n"
-            + description
-        )
-
-        self._logger.debug(f"Notetype: {subject}")
-        self._logger.debug(f"Message: {message}")
-
-        try:
-            SMTP_server.sendmail(login, email_addr, message)
-            SMTP_server.quit()
-        except Exception as e:
-            self._logger.exception(
-                "Exception while logging into SMTP server {message}".format(
-                    message=str(e)
-                )
-            )
-            return "SENDM_E"
-        return True
-
     # send an image with the message. have to watch for errors connecting to the camera
     def _send_message_with_webcam_image(
         self, title, body, filename=None, sender=None, thumbnail=None, send_image=True
@@ -305,7 +273,7 @@ class OctoTextPlugin(
         if not (error is None):
             return error
 
-        appearance_name = self._settings.global_get(["appearance", "name"])
+        appearance_name = self.get_printer_name()
         if body is None:
             body = ""
 
@@ -327,19 +295,17 @@ class OctoTextPlugin(
         if path != "":
             try:
                 fp = open(path, "rb")
+                filename = datetime.datetime.now().isoformat(timespec="minutes") + ".jpg"
+                msg.add_attachment(
+                    fp.read(), maintype="image", subtype="jpg", filename=filename
+                )
+                fp.close()
             except Exception as e:
                 self._logger.exception(
                     "Exception while opening file for snapshot, {message}".format(
                         message=str(e)
                     )
                 )
-
-            filename = datetime.datetime.now().isoformat(timespec="minutes") + ".jpg"
-            msg.add_attachment(
-                fp.read(), maintype="image", subtype="jpg", filename=filename
-            )
-
-            fp.close()
 
         # Send text message through SMS gateway of destination number/address
         try:
@@ -431,6 +397,9 @@ class OctoTextPlugin(
 
     # testing logging and proper startup of passed values in settings forms
     def on_after_startup(self):
+
+        global prusa_plugin, cura_plugin, prusa_folder, cura_folder
+
         self._logger.info("--------------------------------------------")
         self._logger.info(f"OctoText started: {self._plugin_version}")
         self._logger.info(
@@ -441,49 +410,22 @@ class OctoTextPlugin(
                 self._settings.get(["server_login"]),
             )
         )
-        self._logger.info("--------------------------------------------")
-
-    # borrowed from @jneilliii
-    def _extract_thumbnail(self, gcode_filename, thumbnail_filename):
-        import base64
-        import re
-
-        regex = r"(?:^; thumbnail begin \d+x\d+ \d+)(?:\n|\r\n?)((?:.+(?:\n|\r\n?))+?)(?:^; thumbnail end)"
-        lineNum = 0
-        collectedString = ""
-        with open(gcode_filename, "rb") as gcode_file:
-            for line in gcode_file:
-                lineNum += 1
-                line = line.decode("utf-8", "ignore")
-                gcode = octoprint.util.comm.gcode_command_for_cmd(line)
-                extrusionMatch = octoprint.util.comm.regexes_parameters["floatE"].search(
-                    line
-                )
-                if gcode == "G1" and extrusionMatch:
-                    self._logger.debug(
-                        "Line %d: Detected first extrusion. Read complete.", lineNum
-                    )
-                    break
-                if line.startswith(";") or line.startswith("\n"):
-                    collectedString += line
-            self._logger.debug(collectedString)
-            test_str = collectedString.replace(
-                octoprint.util.to_native_str("\r\n"),
-                octoprint.util.to_native_str("\n"),
-            )
-        test_str = test_str.replace(
-            octoprint.util.to_native_str(";\n;\n"),
-            octoprint.util.to_native_str(";\n\n;\n"),
+        # on loading of plugin look for the existence of the prusa or cura thumbnail plugins
+        prusa_plugin = False
+        cura_plugin = False
+        prusa_folder = self.get_plugin_data_folder().replace(
+            "OctoText", "prusaslicerthumbnails"
         )
-        matches = re.findall(regex, test_str, re.MULTILINE)
-        if len(matches) > 0:
-            path = os.path.dirname(thumbnail_filename)
-            if not os.path.exists(path):
-                os.makedirs(path)
-            with open(thumbnail_filename, "wb") as png_file:
-                png_file.write(
-                    base64.b64decode(matches[-1:][0].replace("; ", "").encode())
-                )
+        cura_folder = self.get_plugin_data_folder().replace(
+            "OctoText", "UltimakerFormatPackage"
+        )
+        if os.path.exists(prusa_folder):
+            prusa_plugin = True
+            self._logger.info(f"Prusa thumbnail loaded: {prusa_folder}")
+        if os.path.exists(cura_folder):
+            cura_plugin = True
+            self._logger.info(f"Cura thumbnails loaded: {cura_folder}")
+        self._logger.info("--------------------------------------------")
 
     # ~~ callback for printer pause initiated by the printer (very specific to Prusa)
     # to test the strings being received by the Pi put this in the console: !!DEBUG:send echo:busy: paused for user
@@ -510,27 +452,40 @@ class OctoTextPlugin(
                 self.on_event(octoprint.events.Events.PRINT_PAUSED, payload)
         return line
 
+    def find_thumbnail(self, filename):
+
+        thumb_filename = None
+        prusa_thumb_filename = prusa_folder + "/" + filename.replace(".gcode", ".png")
+        cura_thumb_filename = cura_folder + "/" + filename.replace(".gcode", ".png")
+
+        if os.path.exists(prusa_thumb_filename):
+            thumb_filename = prusa_thumb_filename
+        elif os.path.exists(cura_thumb_filename):
+            thumb_filename = cura_thumb_filename
+        self._logger.debug(f"thumbnail filename path is: {thumb_filename}")
+        if thumb_filename is not None and os.path.exists(thumb_filename):
+            self._logger.debug("thumbnail exists! using image in notifications")
+        return thumb_filename
+
     # ~~ EventPlugin API
 
     def on_event(self, event, payload):
-        last_thumbnail_upload = None
 
         noteType = title = description = None
-        printer_name = self._settings.global_get(["appearance", "name"])
+        printer_name = self.get_printer_name()
 
         do_cam_snapshot = True
         thumbnail_filename = None
 
         if event == octoprint.events.Events.UPLOAD:
-            self._logger.debug(
-                f"Upload event - thumbnail filename {last_thumbnail_upload}"
-            )
+
             if not self._settings.get(["en_upload"]):
                 return
 
             file = payload["name"]
             target = payload["path"]
-
+            path_to_thumbnail = self.find_thumbnail(file)
+            self._logger.debug(f"Upload event - thumbnail filename {path_to_thumbnail}")
             noteType = True
             title = "A file was uploaded "
             description = "{file} was uploaded {targetString}".format(
@@ -552,15 +507,8 @@ class OctoTextPlugin(
             description = "{file} has started printing {originString}.".format(
                 file=file, originString="from SD" if origin == "sd" else "locally"
             )
-            thumbnail_filename = (
-                self.get_plugin_data_folder()
-                + "/"
-                + payload["path"].replace(".gcode", ".png")
-            )
+            thumbnail_filename = self.find_thumbnail(file)
 
-            gcode_filename = self._file_manager.path_on_disk("local", payload["path"])
-            self._extract_thumbnail(gcode_filename, thumbnail_filename)
-            self._logger.debug(f"thumbnail filename {thumbnail_filename}")
             if os.path.exists(thumbnail_filename):
                 self._logger.debug("thumbnail exists! using image in notifications")
             else:
@@ -682,57 +630,6 @@ class OctoTextPlugin(
                     noteType, pay_name, title, description
                 )
             )
-        elif event == "FolderRemoved" and payload["storage"] == "local":
-            import shutil
-
-            shutil.rmtree(
-                self.get_plugin_data_folder() + "/" + payload["path"], ignore_errors=True
-            )
-        elif event == "FileAdded" and "ufp" in payload["type"]:
-            old_name = payload["path"]
-            ufp_file = self.get_plugin_data_folder() + "/" + payload["path"]
-            if os.path.exists(ufp_file):
-                os.remove(ufp_file)
-            self._file_manager.remove_file("local", old_name)
-            return
-        elif (
-            event in ["FileAdded", "FileRemoved"]
-            and payload["storage"] == "local"
-            and "gcode" in payload["type"]
-        ):
-            thumbnail_filename = (
-                self.get_plugin_data_folder()
-                + "/"
-                + payload["path"].replace(".gcode", ".png")
-            )
-            if event == "FileRemoved":
-                if os.path.exists(thumbnail_filename):
-                    os.remove(thumbnail_filename)
-            if event == "FileAdded":
-                gcode_filename = self._file_manager.path_on_disk("local", payload["path"])
-                self._extract_thumbnail(gcode_filename, thumbnail_filename)
-                self._logger.debug(f"thumbnail filename {thumbnail_filename}")
-                if os.path.exists(thumbnail_filename):
-                    thumbnail_url = (
-                        "plugin/OctoText/thumbnail/"
-                        + payload["path"].replace(".gcode", ".png")
-                        + "?"
-                        + f"{datetime.datetime.now():%Y%m%d%H%M%S}"
-                    )
-                    self._file_manager.set_additional_metadata(
-                        "local",
-                        payload["path"],
-                        "thumbnail",
-                        thumbnail_url.replace("//", "/"),
-                        overwrite=True,
-                    )
-                    self._file_manager.set_additional_metadata(
-                        "local",
-                        payload["path"],
-                        "thumbnail_src",
-                        self._identifier,
-                        overwrite=True,
-                    )
 
         if noteType is None:
             return
@@ -744,80 +641,6 @@ class OctoTextPlugin(
             thumbnail=thumbnail_filename,
             send_image=do_cam_snapshot,
         )
-
-    ##-- UFP upload extenstion tree hook
-
-    def get_extension_tree(self, *args, **kwargs):
-        return dict(machinecode=dict(ufp=["ufp"]))
-
-    ##~~ UFP upload preprocessor hook - totally stolen from @jneillliii
-
-    def ufp_upload(
-        self,
-        path,
-        file_object,
-        links=None,
-        printer_profile=None,
-        allow_overwrite=True,
-        *args,
-        **kwargs,
-    ):
-        ufp_extensions = [".ufp"]
-        name, extension = os.path.splitext(file_object.filename)
-        if extension in ufp_extensions:
-            ufp_filename = self.get_plugin_data_folder() + "/" + path
-            png_filename = ufp_filename.replace(".ufp", ".png")
-            gco_filename = ufp_filename.replace(".ufp", ".gcode")
-            ufp_filepath = os.path.dirname(ufp_filename)
-
-            if not os.path.exists(ufp_filepath):
-                os.makedirs(ufp_filepath)
-
-            if os.path.exists(png_filename):
-                self._logger.debug(f"thumbnail {png_filename} removed")
-                os.remove(png_filename)
-
-            file_object.save(ufp_filename)
-            self._logger.debug(
-                f"Ufp_filename: {ufp_filename} png_filename: {png_filename}"
-            )
-            with ZipFile(ufp_filename, "r") as zipObj:
-                try:
-                    with open(png_filename, "wb") as thumbnail:
-                        thumbnail.write(zipObj.read("/Metadata/thumbnail.png"))
-                except KeyError:
-                    png_filename = None
-                with open(gco_filename, "wb") as f:
-                    f.write(zipObj.read("/3D/model.gcode"))
-
-            file_wrapper = octoprint.filemanager.util.DiskFileWrapper(
-                path.replace(".ufp", ".gcode"), gco_filename, move=True
-            )
-            uploaded_file = self._file_manager.add_file(
-                "local", file_wrapper.filename, file_wrapper, allow_overwrite=True
-            )
-
-            if png_filename:
-                self._logger.debug("Adding thumbnail url to metadata")
-                thumbnail_url = (
-                    "plugin/OctoText/thumbnail/"
-                    + uploaded_file.replace(".gcode", ".png")
-                    + "?"
-                    + f"{datetime.datetime.now():%Y%m%d%H%M%S}"
-                )
-                self._file_manager.set_additional_metadata(
-                    "local", uploaded_file, "thumbnail", thumbnail_url, overwrite=True
-                )
-                self._file_manager.set_additional_metadata(
-                    "local",
-                    uploaded_file,
-                    "thumbnail_src",
-                    self._identifier,
-                    overwrite=True,
-                )
-
-            return octoprint.filemanager.util.DiskFileWrapper(path, ufp_filename)
-        return file_object
 
     ##~~ Softwareupdate hook
 
@@ -861,6 +684,4 @@ def __plugin_load__():
     __plugin_hooks__ = {
         "octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information,
         "octoprint.comm.protocol.gcode.received": __plugin_implementation__.AlertWaitingForUser,
-        "octoprint.filemanager.preprocessor": __plugin_implementation__.ufp_upload,
-        "octoprint.filemanager.extension_tree": __plugin_implementation__.get_extension_tree,
     }
