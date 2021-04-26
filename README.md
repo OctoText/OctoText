@@ -16,7 +16,8 @@ OctoText will notify you via text (or email) on common printer events. The curre
    <li> Error (unrecoverable)</li>
 </ul>
 
-OctoText will also include a thumbnail of your print if <b> you have loaded PrusaSlicer Thumbnails and Cura Thumbnails plugins</b>.
+OctoText will also include a thumbnail of your print if <b> you have loaded [PrusaSlicer Thumbnails](https://github.com/jneilliii/OctoPrint-PrusaSlicerThumbnails)
+and [Cura Thumbnails](https://github.com/jneilliii/OctoPrint-UltimakerFormatPackage) plugins</b>.
 This is a change from previous OctoText revisions where OctoText was handling the thumbnails directly. Essentially
 loading these plugins allows for a better interface with Cura and less redundancy for those that already use the
 Prusa and Cura plugins. Just search for 'thumbnail' in the plugin manager.

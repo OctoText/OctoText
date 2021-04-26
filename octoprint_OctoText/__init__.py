@@ -1,16 +1,22 @@
-# This is the main branch - changes to this version include:
-# updates to the notifications reported:
-# 	print paused, resumed
-# 	make the icon in the status bar go away, and smaller when it is there
-# 	insert the printer name into the reporting
-#   SSL encryption added.
-#   settings form changed to make it easier to understand.
+# -*- coding: utf-8 -*-
+# This is the working branch - changes to this version include:
+# Redoing how notifications are sent.
+#
+# The current plan is to implement a thread-queue method
+#  New notifications will be put on a queue, which feeds a thread that is running
+#  consuming FIFO events to be sent
+#  The reason to do it this way is to allow for retries when the network goes away
+#  Network (internet interruptions) happen frequently on Starlink, so this should be
+#  easy to test.
 #
 import datetime
 import os
 import smtplib
+import time
 from email.message import EmailMessage
 from email.utils import formatdate
+from queue import Queue
+from threading import Thread
 
 import flask
 import octoprint.events
@@ -36,37 +42,51 @@ class OctoTextPlugin(
     octoprint.plugin.TemplatePlugin,
 ):
 
+    notifyQ = Queue()
+
+    # This function is started as a thread and blocks on a queue looking for work. It sends all
+    # of the notifications except for the test message.
+
+    def worker(self):
+        while True:
+            self._logger.debug("NO Work being done")
+            workToDo = self.notifyQ.get()
+            # do the work
+            self._logger.debug(f"Work being done {workToDo}")
+            self.notifyQ.task_done()
+            time.sleep(60)  # make this adjustable?
+
     ##~~ SettingsPlugin mixin
 
     def get_settings_defaults(self):
-        return dict(
-            smtp_port=587,  # most default to this
-            smtp_name="smtp.office365.com",  # mail server name
-            smtp_alert="*ALERT from your PRINTER*",
-            smtp_message="Your printer is creating something wonderful!",  # the message to send
-            server_login="YourEmail@outlook.com",  # mail account to use
-            server_pass="not a valid password",  # password for that account
-            phone_numb="8675309",  # sorry jenny!
-            carrier_address="mypixmessages.com",
-            push_message=None,
-            progress_interval=10,  # should we limit this to a reasonable number?
-            en_progress=False,
-            en_webcam=True,
-            en_printstart=True,
-            en_printend=True,
-            en_upload=True,
-            en_error=True,
-            en_printfail=False,
-            en_printpaused=True,
-            en_printresumed=False,
-            show_navbar_button=True,
-            show_fail_cancel=False,
-            mmu_timeout=0,
-            use_ssl=False,
-        )
+        return {
+            "smtp_port": 587,
+            "smtp_name": "smtp.office365.com",
+            "smtp_alert": "*ALERT from your PRINTER*",
+            "smtp_message": "Your printer is creating something wonderful!",
+            "server_login": "YourEmail@outlook.com",
+            "server_pass": "not a valid password",
+            "phone_numb": "8675309",
+            "carrier_address": "mypixmessages.com",
+            "push_message": None,
+            "progress_interval": 10,
+            "en_progress": False,
+            "en_webcam": True,
+            "en_printstart": True,
+            "en_printend": True,
+            "en_upload": True,
+            "en_error": True,
+            "en_printfail": False,
+            "en_printpaused": True,
+            "en_printresumed": False,
+            "show_navbar_button": True,
+            "show_fail_cancel": False,
+            "mmu_timeout": 0,
+            "use_ssl": False,
+        }
 
     def get_api_commands(self):
-        return dict(test=["token"])
+        return {"test": ["token"]}
 
     def get_printer_name(self):
         a_name = self._settings.global_get(["appearance", "name"])
@@ -108,12 +128,12 @@ class OctoTextPlugin(
     def get_assets(self):
         # Define your plugin's asset files to automatically include in the
         # core UI here.
-        return dict(js=["js/OctoText.js"])
+        return {"js": ["js/OctoText.js"]}
 
     def get_template_configs(self):
         return [
-            dict(type="navbar", name="OctoText", custom_bindings=True),
-            dict(type="settings", name="OctoText", custom_bindings=True),
+            {"type": "navbar", "name": "OctoText", "custom_bindings": True},
+            {"type": "settings", "name": "OctoText", "custom_bindings": True},
         ]
 
     # access restrictions for sensitive data
@@ -134,7 +154,7 @@ class OctoTextPlugin(
 
     def get_settings_restricted_paths(self):
         # only used in OctoPrint versions > 1.2.16
-        return dict(admin=[["server_pass"], ["server_login"]])
+        return {"admin": [["server_pass"], ["server_login"]]}
 
     def on_settings_save(self, data):
 
@@ -374,10 +394,12 @@ class OctoTextPlugin(
 
         try:
             self._logger.debug("Sending text with image")
-            result = self._send_message_with_webcam_image(
-                "Test from the OctoText Plugin.",
-                self._settings.get(["smtp_message"]),
-                sender="OctoText",
+            result = (
+                self._send_message_with_webcam_image(  # TODO change this to use the queue
+                    "Test from the OctoText Plugin.",
+                    self._settings.get(["smtp_message"]),
+                    sender="OctoText",
+                )
             )
         except Exception as e:
             self._logger.exception(
@@ -426,6 +448,7 @@ class OctoTextPlugin(
             cura_plugin = True
             self._logger.info(f"Cura thumbnails loaded: {cura_folder}")
         self._logger.info("--------------------------------------------")
+        Thread(target=self.worker, daemon=True).start()
 
     # ~~ callback for printer pause initiated by the printer (very specific to Prusa)
     # to test the strings being received by the Pi put this in the console: !!DEBUG:send echo:busy: paused for user
@@ -634,6 +657,17 @@ class OctoTextPlugin(
         if noteType is None:
             return
 
+        self.notifyQ.put(
+            dict(
+                [
+                    ("title", title),
+                    ("description", description),
+                    ("sender", printer_name),
+                    ("thumbnail", thumbnail_filename),
+                    ("send_image", do_cam_snapshot),
+                ]
+            )
+        )
         self._send_message_with_webcam_image(
             title,
             description,
@@ -648,27 +682,29 @@ class OctoTextPlugin(
         # Define the configuration for your plugin to use with the Software Update
         # Plugin here. See https://docs.octoprint.org/en/master/bundledplugins/softwareupdate.html
         # for details.
-        return dict(
-            OctoText=dict(
-                displayName="OctoText",  # should this be self._plugin_name ??
-                displayVersion=self._plugin_version,
-                # version check: github repository
-                type="github_release",
-                user="berrystephenw",
-                repo="Octotext",
-                current=self._plugin_version,
-                stable_branch=dict(name="Stable", branch="main", comittish=["main"]),
-                prerelease_branches=[
-                    dict(
-                        name="Release Candidate",
-                        branch="rc",
-                        comittish=["rc", "main"],
-                    )
+        return {
+            "OctoText": {
+                "displayName": "OctoText",
+                "displayVersion": self._plugin_version,
+                "type": "github_release",
+                "user": "berrystephenw",
+                "repo": "Octotext",
+                "current": self._plugin_version,
+                "stable_branch": {
+                    "name": "Stable",
+                    "branch": "main",
+                    "comittish": ["main"],
+                },
+                "prerelease_branches": [
+                    {
+                        "name": "Release Candidate",
+                        "branch": "rc",
+                        "comittish": ["rc", "main"],
+                    }
                 ],
-                # update method: pip
-                pip="https://github.com/berrystephenw/OctoText/archive/{target_version}.zip",
-            )
-        )
+                "pip": "https://github.com/berrystephenw/OctoText/archive/{target_version}.zip",
+            }
+        }
 
 
 __plugin_name__ = "OctoText"
