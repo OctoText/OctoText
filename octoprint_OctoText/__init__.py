@@ -25,11 +25,6 @@ import sarge
 from flask_login import current_user
 
 # a few globals to save time checking for the existence of plugins
-last_fired = None
-prusa_plugin = False
-cura_plugin = False
-prusa_folder = ""
-cura_folder = ""
 
 
 class OctoTextPlugin(
@@ -41,8 +36,10 @@ class OctoTextPlugin(
     octoprint.plugin.SimpleApiPlugin,
     octoprint.plugin.TemplatePlugin,
 ):
-
     notifyQ = Queue()
+    last_fired = None
+    prusa_folder = ""
+    cura_folder = ""
 
     # This function is started as a thread and blocks on a queue looking for work. It sends all
     # of the notifications except for the test message.
@@ -53,6 +50,25 @@ class OctoTextPlugin(
             workToDo = self.notifyQ.get()
             # do the work
             self._logger.debug(f"Work being done {workToDo}")
+            result = False
+            retries = 0
+            while result is False:
+                result = self._send_message_with_webcam_image(
+                    workToDo["title"],
+                    workToDo["description"],
+                    sender=workToDo["sender"],
+                    thumbnail=workToDo["thumbnail"],
+                    send_image=workToDo["send_image"],
+                )
+                retries += 1
+                if retries > 5:
+                    break
+                if (
+                    result is not True
+                ):  # TODO need to check for only those errors that should be retried
+                    time.sleep(30)
+
+            self._logger.debug(f"Send Message result: {result}")
             self.notifyQ.task_done()
             time.sleep(60)  # make this adjustable?
 
@@ -112,16 +128,19 @@ class OctoTextPlugin(
         if progress % int(self._settings.get(["progress_interval"])) == 0:
             printer_name = self.get_printer_name()
             title = "Print Progress "
-            description = str(progress) + " percent finished. "
+            description = "file: " + path + "\n" + str(progress) + " percent finished. "
             # noteType = "Status from: " + printer_name
-            if self._settings.get(["en_webcam"]):
-                self._send_message_with_webcam_image(
-                    title, description, sender=printer_name
+            self.notifyQ.put(
+                dict(
+                    [
+                        ("title", title),
+                        ("description", description),
+                        ("sender", printer_name),
+                        ("thumbnail", None),
+                        ("send_image", self._settings.get(["en_webcam"])),
+                    ]
                 )
-            else:
-                self._send_message_with_webcam_image(
-                    title, description, sender=printer_name, send_image=False
-                )
+            )
 
     ##~~ AssetPlugin mixin
 
@@ -394,12 +413,11 @@ class OctoTextPlugin(
 
         try:
             self._logger.debug("Sending text with image")
-            result = (
-                self._send_message_with_webcam_image(  # TODO change this to use the queue
-                    "Test from the OctoText Plugin.",
-                    self._settings.get(["smtp_message"]),
-                    sender="OctoText",
-                )
+
+            result = self._send_message_with_webcam_image(
+                "Test from the OctoText Plugin.",
+                self._settings.get(["smtp_message"]),
+                sender="OctoText",
             )
         except Exception as e:
             self._logger.exception(
@@ -420,8 +438,6 @@ class OctoTextPlugin(
     # testing logging and proper startup of passed values in settings forms
     def on_after_startup(self):
 
-        global prusa_plugin, cura_plugin, prusa_folder, cura_folder
-
         self._logger.info("--------------------------------------------")
         self._logger.info(f"OctoText started: {self._plugin_version}")
         self._logger.info(
@@ -433,20 +449,17 @@ class OctoTextPlugin(
             )
         )
         # on loading of plugin look for the existence of the prusa or cura thumbnail plugins
-        prusa_plugin = False
-        cura_plugin = False
-        prusa_folder = self.get_plugin_data_folder().replace(
+
+        self.prusa_folder = self.get_plugin_data_folder().replace(
             "OctoText", "prusaslicerthumbnails"
         )
-        cura_folder = self.get_plugin_data_folder().replace(
+        self.cura_folder = self.get_plugin_data_folder().replace(
             "OctoText", "UltimakerFormatPackage"
         )
-        if os.path.exists(prusa_folder):
-            prusa_plugin = True
-            self._logger.info(f"Prusa thumbnail loaded: {prusa_folder}")
-        if os.path.exists(cura_folder):
-            cura_plugin = True
-            self._logger.info(f"Cura thumbnails loaded: {cura_folder}")
+        if os.path.exists(self.prusa_folder):
+            self._logger.info(f"Prusa thumbnail loaded: {self.prusa_folder}")
+        if os.path.exists(self.cura_folder):
+            self._logger.info(f"Cura thumbnails loaded: {self.cura_folder}")
         self._logger.info("--------------------------------------------")
         Thread(target=self.worker, daemon=True).start()
 
@@ -454,10 +467,9 @@ class OctoTextPlugin(
     # to test the strings being received by the Pi put this in the console: !!DEBUG:send echo:busy: paused for user
 
     def AlertWaitingForUser(self, comm, line, *args, **kwargs):
-        global last_fired
-        if last_fired is not None:
+        if self.last_fired is not None:
             right_now = datetime.datetime.now()
-            how_long = right_now - last_fired
+            how_long = right_now - self.last_fired
             # self._logger.debug(
             #    f"last fired {last_fired}, right_now {right_now} seconds {how_long.seconds}"
             # )
@@ -470,7 +482,7 @@ class OctoTextPlugin(
         if "echo:busy: paused for user" in line:
             self._logger.info(f"State ID: {self._printer.get_state_id()}")
             if self._printer.get_state_id() == "PRINTING":
-                last_fired = datetime.datetime.now()
+                self.last_fired = datetime.datetime.now()
                 payload = dict([("name", "printer"), ("user", "system")])
                 self.on_event(octoprint.events.Events.PRINT_PAUSED, payload)
         return line
@@ -478,8 +490,10 @@ class OctoTextPlugin(
     def find_thumbnail(self, filename):
 
         thumb_filename = None
-        prusa_thumb_filename = prusa_folder + "/" + filename.replace(".gcode", ".png")
-        cura_thumb_filename = cura_folder + "/" + filename.replace(".gcode", ".png")
+        prusa_thumb_filename = (
+            self.prusa_folder + "/" + filename.replace(".gcode", ".png")
+        )
+        cura_thumb_filename = self.cura_folder + "/" + filename.replace(".gcode", ".png")
 
         if os.path.exists(prusa_thumb_filename):
             thumb_filename = prusa_thumb_filename
@@ -531,11 +545,6 @@ class OctoTextPlugin(
                 file=file, originString="from SD" if origin == "sd" else "locally"
             )
             thumbnail_filename = self.find_thumbnail(file)
-
-            if os.path.exists(thumbnail_filename):
-                self._logger.debug("thumbnail exists! using image in notifications")
-            else:
-                thumbnail_filename = None
 
         elif event == octoprint.events.Events.PRINT_DONE:
 
@@ -667,13 +676,6 @@ class OctoTextPlugin(
                     ("send_image", do_cam_snapshot),
                 ]
             )
-        )
-        self._send_message_with_webcam_image(
-            title,
-            description,
-            sender=printer_name,
-            thumbnail=thumbnail_filename,
-            send_image=do_cam_snapshot,
         )
 
     ##~~ Softwareupdate hook
