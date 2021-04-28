@@ -42,8 +42,14 @@ class OctoTextPlugin(
     cura_folder = ""
 
     # This function is started as a thread and blocks on a queue looking for work. It sends all
-    # of the notifications except for the test message.
-
+    # of the notifications except for the test message (because we want the error code to be reported
+    # to the user by an error notice).
+    # Occasionally I've seen delays of up to 15 minutes with text messages due to poor cell connections
+    # or just carrier issues - but this code seems to retry correctly on internet connection issues.
+    #   Retry-able error codes:
+    #       SMTP_E - for errors setting up the SMTP connection
+    #       LOGIN_E - for errors logging into the host email account
+    #       SENDM_E - error sending email from server
     def worker(self):
         while True:
             self._logger.debug("NO Work being done")
@@ -52,10 +58,15 @@ class OctoTextPlugin(
             self._logger.debug(f"Work being done {workToDo}")
             result = False
             retries = 0
+            first_time = datetime.datetime.now()
             while result is False:
+                if retries > 0:
+                    retry_str = " retries: " + str(retries)
+                else:
+                    retry_str = ""
                 result = self._send_message_with_webcam_image(
                     workToDo["title"],
-                    workToDo["description"],
+                    workToDo["description"] + retry_str,
                     sender=workToDo["sender"],
                     thumbnail=workToDo["thumbnail"],
                     send_image=workToDo["send_image"],
@@ -63,11 +74,22 @@ class OctoTextPlugin(
                 retries += 1
                 if retries > 5:
                     break
-                if (
-                    result is not True
-                ):  # TODO need to check for only those errors that should be retried
+                if result in ["SMTP_E", "LOGIN_E", "SENDM_E"]:
+                    self._logger.debug(
+                        f"Retrying notification, error {result}: workToDo: {workToDo}"
+                    )
                     time.sleep(30)
-
+                    result = False
+                else:
+                    break
+            now_time = datetime.datetime.now()
+            elapsed_time = now_time - first_time
+            if (
+                elapsed_time.seconds > 29
+            ):  # >= time.sleep(30) says we had at least one delayed notice
+                self._logger.debug(
+                    f"Retries sending message: {retries}. Time message delayed: {elapsed_time}"
+                )
             self._logger.debug(f"Send Message result: {result}")
             self.notifyQ.task_done()
             time.sleep(60)  # make this adjustable?
@@ -124,7 +146,7 @@ class OctoTextPlugin(
         # on a Pi 4 (not so much on a fast laptop). We default to letting the printend message do the work
         if progress == 100 and self._settings.get(["en_printend"]):
             return
-
+        # occasionally we don't get 99% messages from progress intervals (might be on short prints)
         if progress % int(self._settings.get(["progress_interval"])) == 0:
             printer_name = self.get_printer_name()
             title = "Print Progress "
@@ -186,6 +208,13 @@ class OctoTextPlugin(
         octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
 
     # Login to the mail server
+    # Returns:
+    #  first position:
+    #   SMTP_E for errors setting up the SMTP connection
+    #   LOGIN_E for errors logging into the host email account
+    #   None for no error found
+    #  second position:
+    #   email address of the recipient when there is no error, None otherwise
     def smtp_login_server(self):
         global SMTP_server
         name = self._settings.get(["smtp_name"])
@@ -216,7 +245,7 @@ class OctoTextPlugin(
                     message=str(e)
                 )
             )
-            return ["SMTP", None]
+            return ["SMTP_E", None]
 
         # login to the mail account
         self._logger.debug(login)
@@ -235,6 +264,16 @@ class OctoTextPlugin(
         return [None, email_addr]
 
     # send an image with the message. have to watch for errors connecting to the camera
+    # Returns:
+    #   SNAP - a failure to get an image from the webcam
+    #   FILE_E - filesystem error
+    #   True - no error
+    #   _send_file results
+    #       SMTP_E - for errors setting up the SMTP connection
+    #       LOGIN_E - for errors logging into the host email account
+    #       SENDM_E - error sending email from server
+    #       True - no error
+
     def _send_message_with_webcam_image(
         self, title, body, filename=None, sender=None, thumbnail=None, send_image=True
     ):
@@ -299,11 +338,18 @@ class OctoTextPlugin(
                                 tempFile.name, str(e)
                             )
                         )
-                        return False
+                        return "FILE_E"
 
         return result
 
     # format the MMS message - both text and image.
+    # Returns:
+    #   From login server:
+    #     SMTP - for errors setting up the SMTP connection
+    #     LOGIN_E - for errors logging into the host email account
+    #     None - for no error found - never returned to caller
+    #   SENDM_E - error sending email from server
+    #   True - no error
     def _send_file(self, sender, path, title, body):
 
         # login to the SMTP account and mail server
@@ -423,7 +469,7 @@ class OctoTextPlugin(
             self._logger.exception(
                 "Exception while sending text, {message}".format(message=str(e))
             )
-            return flask.make_response(flask.jsonify(result=False, error="SMTP"))
+            return flask.make_response(flask.jsonify(result=False, error="SMTP_E"))
 
         # result = True
         self._logger.debug(f"String returned from send_message_with_webcam {result}")

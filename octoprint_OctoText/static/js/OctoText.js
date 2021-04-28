@@ -40,7 +40,7 @@ $(function() {
                             text = gettext("Failure to login to your email account!");
                         } else if (response.error === "SENDM_E"){
                             text = gettext("Exception while logging into mail server. Check your login and password.");
-                        } else if (response.error === "SMTP"){
+                        } else if (response.error === "SMTP_E"){
                             text = gettext("Exception while talking to your mail server, check your SMTP settings.");
                         } else {
                             text = gettext("Test message could not be sent, check log & your settings");
