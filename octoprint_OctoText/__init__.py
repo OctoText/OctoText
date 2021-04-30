@@ -123,9 +123,6 @@ class OctoTextPlugin(
             "use_ssl": False,
         }
 
-    def get_api_commands(self):
-        return {"test": ["token"]}
-
     def get_printer_name(self):
         a_name = self._settings.global_get(["appearance", "name"])
         if a_name == "":
@@ -451,6 +448,35 @@ class OctoTextPlugin(
                 )
             )
 
+    def get_api_commands(self):
+        return {
+            "test": [],
+            "data": ["some_parameter"],
+        }  # dictionary of acceptable commands
+
+    # Called by OctoPrint upon a POST request to /api/plugin/<plugin identifier>.
+    # command will contain one of the commands as specified via get_api_commands(),
+    # data will contain the full request body parsed from JSON into a Python dictionary.
+    #
+    # format of post request from plugin:
+    # r = requests.post('/api/plugin/OctoText', json={'param1': 'value1', 'param2': 'value2'})
+    def on_api_command(self, command, data):
+        self._logger.debug(f"Got an API command: {command}, data: {data}")
+        return flask.jsonify(result="ok")
+
+    # Api notifications from other plugins are received on this callback
+    def receive_api_command(self, command, data, permissions=None):
+        self._logger.debug(f"received a message command: {command} data: {data} ")
+        send_data = data["test"]
+        # TODO check the data before we put it on the queue
+        # there is no way to notify the caller that there was an error so just log the
+        # issues
+        # title and description are required!
+        if send_data["title"] is None or send_data["description"] is None:
+            return
+        self.notifyQ.put(send_data)
+        return True  # return is not used, which is too bad...
+
     # called when the user presses the icon in the status bar for testing or the test button in the settings form
     def on_api_get(self, request):
 
@@ -508,6 +534,7 @@ class OctoTextPlugin(
             self._logger.info(f"Cura thumbnails loaded: {self.cura_folder}")
         self._logger.info("--------------------------------------------")
         Thread(target=self.worker, daemon=True).start()
+        self._plugin_manager.register_message_receiver(self.receive_api_command)
 
     # ~~ callback for printer pause initiated by the printer (very specific to Prusa)
     # to test the strings being received by the Pi put this in the console: !!DEBUG:send echo:busy: paused for user
@@ -555,8 +582,6 @@ class OctoTextPlugin(
     def on_event(self, event, payload):
 
         noteType = title = description = None
-        printer_name = self.get_printer_name()
-
         do_cam_snapshot = True
         thumbnail_filename = None
 
@@ -581,7 +606,7 @@ class OctoTextPlugin(
             if not self._settings.get(["en_printstart"]):
                 return
 
-            self._logger.debug(payload)
+            self._logger.debug(f"Print started event: {payload}")
             file = os.path.basename(payload["name"])
             origin = payload["origin"]
 
@@ -600,6 +625,7 @@ class OctoTextPlugin(
             file = os.path.basename(payload["name"])
             elapsed_time = payload["time"]
 
+            self._logger.debug(f"Event received: {event}, print done: {file}")
             noteType = True
             title = "Print job finished"
             description = "{file} finished printing, took {elapsed_time} seconds.".format(
@@ -616,6 +642,7 @@ class OctoTextPlugin(
             noteType = True
             title = "Printer ERROR!"
             description = f" {error}"
+            self._logger.debug(f"Event received: {event}, print error: {error}")
 
         elif event == octoprint.events.Events.PRINT_CANCELLED:
 
@@ -712,6 +739,7 @@ class OctoTextPlugin(
         if noteType is None:
             return
 
+        printer_name = self.get_printer_name()
         self.notifyQ.put(
             dict(
                 [
