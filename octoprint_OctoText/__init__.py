@@ -466,6 +466,9 @@ class OctoTextPlugin(
 
     # Api notifications from other plugins are received on this callback
     def receive_api_command(self, command, data, permissions=None):
+
+        if command != self._identifier:
+            return
         self._logger.debug(f"received a message command: {command} data: {data} ")
         send_data = data["test"]
         # TODO check the data before we put it on the queue
