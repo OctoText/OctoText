@@ -146,9 +146,8 @@ class OctoTextPlugin(
         # occasionally we don't get 99% messages from progress intervals (might be on short prints)
         if progress % int(self._settings.get(["progress_interval"])) == 0:
             printer_name = self.get_printer_name()
-            title = "Print Progress "
-            description = "file: " + path + "\n" + str(progress) + " percent finished. "
-            # noteType = "Status from: " + printer_name
+            title = "Print Progress " + str(progress) + " percent finished."
+            description = path
             self.notifyQ.put(
                 dict(
                     [
@@ -317,6 +316,9 @@ class OctoTextPlugin(
                         message=str(e)
                     )
                 )
+                # send message without webcam snapshot (enabled but not available)
+                path = self._basefolder + "/static/img/offline.jpg"
+                self._send_file(sender, path, title, body)
                 return "SNAP"
             else:
                 # ffmpeg can't guess file type it seems
@@ -631,7 +633,7 @@ class OctoTextPlugin(
             self._logger.debug(f"Event received: {event}, print done: {file}")
             noteType = True
             title = "Print job finished"
-            description = "{file} finished printing, took {elapsed_time} seconds.".format(
+            description = "{file} \n\rfinished printing, elapsed time: {elapsed_time} seconds.".format(
                 file=file, elapsed_time=int(elapsed_time)
             )
 
