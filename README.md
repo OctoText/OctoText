@@ -28,7 +28,7 @@ here: [TextAPI](https://github.com/berrystephenw/OctoPrint-Textapi).
 Print Pausing detects "waiting for user messages" that are sent by Prusa printers
 on filament run out conditions.
 
-A bug was fixed when webcams that are enabled in OctoText, but the cam isn't working (for whatever reason) OctoText didn't send
+A bug was fixed when webcams are enabled in OctoText, but the cam isn't working (for whatever reason) OctoText didn't send
 any notifications. This has been changed so the text portion of the message is still sent along with
 a friendly image telling you your webcam is down.
 
