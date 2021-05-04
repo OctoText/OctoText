@@ -15,18 +15,22 @@ OctoText will notify you via text (or email) on common printer events. The curre
 
 OctoText will also include a thumbnail of your print if <b> you have loaded [PrusaSlicer Thumbnails](https://github.com/jneilliii/OctoPrint-PrusaSlicerThumbnails)
 or [Cura Thumbnails](https://github.com/jneilliii/OctoPrint-UltimakerFormatPackage) plugins</b>.
-This is a change from previous OctoText revisions where OctoText was handling the thumbnails directly. Essentially
-loading these plugins allows for a better interface with Cura and less redundancy for those that already use the
-Prusa and Cura plugins. Just search for 'thumbnail' in the plugin manager.
+**This is a change from previous OctoText revisions where OctoText was handling the thumbnails directly.** 
+Loading these plugins allows for a better interface with Cura and less redundancy for those that already use the
+Prusa and Cura plugins. Just search for 'thumbnail' in the plugin manager to find them.
+
+The thumbnail will only be sent on a print START event.
 
 This release also introduces retries for network outages, where messages will retry for up to 5 minutes. An API is introduced
 so other plugins can send custom messages through OctoText. An example plugin that shows how this works can be found 
 here: [TextAPI](https://github.com/berrystephenw/OctoPrint-Textapi).
 
-The thumbnail will only be sent on a print START event.
-
-Print Pausing detection has been enhanced so that it detects "waiting for user messages" that are sent by Prusa printers
+Print Pausing detects "waiting for user messages" that are sent by Prusa printers
 on filament run out conditions.
+
+A bug was fixed when webcams that are enabled in OctoText, but the cam isn't working (for whatever reason) OctoText didn't send
+any notifications. This has been changed so the text portion of the message is still sent along with
+a friendly image telling you your webcam is down.
 
 <img width="128" alt="OctoText" src="assets/img/iconfinder_13_1236350.png">
 <p>
