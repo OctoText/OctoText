@@ -2,4 +2,4 @@ include README.md
 recursive-include octoprint_OctoText/templates *
 recursive-include octoprint_OctoText/translations *
 recursive-include octoprint_OctoText/static *
-include octoprint_fortune/fortunes
+
