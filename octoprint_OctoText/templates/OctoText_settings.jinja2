@@ -61,6 +61,10 @@
             <input type="checkbox" value="Progress notifications" data-bind="checked: settings.settings.plugins.OctoText.en_progress">
             Get a notification periodically as the print progresses. Please set the progress interval below when enabled.
         </label>
+        <label class="checkbox" data-bind="visible: settings.settings.plugins.OctoText.en_progress" >
+            <input type="checkbox" value="Time based progress notification" data-bind="checked: settings.settings.plugins.OctoText.en_progress_time">
+            Get progress notifications based on the estimated print time reported - not the percentage of the file printed.
+        </label>
 
         <div class="control-group" data-bind="visible: settings.settings.plugins.OctoText.en_progress()">
         <label class="control-label">{{ _('Progress Interval (percentage)') }}</label>
