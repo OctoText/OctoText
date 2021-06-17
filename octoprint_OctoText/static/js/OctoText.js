@@ -4,7 +4,6 @@
  * Author: Stephen Berry
  * License: AGPLv3
  */
-
 $(document).ready(function(){
     $('[tool-tip-toggle="tooltip"]').tooltip({
         placement : 'bottom'
