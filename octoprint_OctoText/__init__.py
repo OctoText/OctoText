@@ -549,7 +549,7 @@ class OctoTextPlugin(
         Thread(target=self.worker, daemon=True).start()
         self._plugin_manager.register_message_receiver(self.receive_api_command)
 
-    # ~~ callback for printer pause initiated by the printer (very specific to Prusa)
+    # ~~ callback for pause initiated by the printer (very specific to Prusa)
     # to test the strings being received by the Pi put this in the console: !!DEBUG:send echo:busy: paused for user
 
     def AlertWaitingForUser(self, comm, line, *args, **kwargs):
@@ -603,19 +603,18 @@ class OctoTextPlugin(
         self._logger.debug(f"progress: {ptl}")
         while not stopme.is_set():
             progr = self._printer.get_current_data()["progress"]
-            # need to do this differently
-            # should calculate the current percentage everytime through the loop based on
-            # total time and time left (which can change based on actual print time)
-            # printTime and printTimeLeft should give us a new total
-            interval = int(self._settings.get(["progress_interval"])) / 100 * int(ptl)
+            total_time = progr["printTime"] + progr["printTimeLeft"]
+            interval = (
+                int(self._settings.get(["progress_interval"])) / 100 * int(total_time)
+            )
+            interval = int(interval)
             self._logger.debug(f"interval: {interval}")
             time.sleep(interval)
-            if stopme.is_set():
-                return
+
             # send the message to the queue
             progr = self._printer.get_current_data()["progress"]
             pt_current = progr["printTimeLeft"]
-            if pt_current is None or pt_current == 0:
+            if pt_current is None or pt_current == 0 or stopme.is_set():
                 self._logger.debug("Exiting time thread!")
                 return
             # progress = int((pt_current / ptl) * 100)
@@ -638,6 +637,7 @@ class OctoTextPlugin(
             )
         return
 
+    # ~~ Simple function to start and stop the time thread
     stopme = threading.Event()
 
     def manage_progress_thread(self, stop=False):
@@ -701,13 +701,15 @@ class OctoTextPlugin(
                 return
 
             file = os.path.basename(payload["name"])
-            elapsed_time = payload["time"]
+            elapsed_time = datetime.timedelta(seconds=int(payload["time"]))
 
             self._logger.debug(f"Event received: {event}, print done: {file}")
             noteType = True
             title = "Print job finished"
-            description = "{file} \n\rfinished printing, elapsed time: {elapsed_time} seconds.".format(
-                file=file, elapsed_time=int(elapsed_time)
+            description = (
+                "{file} \n\rfinished printing, elapsed time: {elapsed_time}.".format(
+                    file=file, elapsed_time=elapsed_time
+                )
             )
             if self._settings.get(["en_progress_time"]):
                 self.manage_progress_thread(stop=True)
