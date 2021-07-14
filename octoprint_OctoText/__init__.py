@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # This is the working branch - changes to this version include:
 # Redoing how notifications are sent.
 #
@@ -102,7 +103,10 @@ class OctoTextPlugin(
             "smtp_name": "smtp.office365.com",
             "smtp_alert": "*ALERT from your PRINTER*",
             "smtp_message": "Your printer is creating something wonderful!",
-            "server_login": "YourEmail@outlook.com",
+            "username": "YourEmail",
+            "servername": "outlook.com",
+            "server_login": "YourEmail@outlook.com",  # obsoleted
+            "validate_username": False,
             "server_pass": "not a valid password",
             "phone_numb": "8675309",
             "carrier_address": "mypixmessages.com",
@@ -224,7 +228,16 @@ class OctoTextPlugin(
         name = self._settings.get(["smtp_name"])
         port = self._settings.get(["smtp_port"])
         # message = self._settings.get(["smtp_message"])
-        login = self._settings.get(["server_login"])
+        validate = self._settings.get(["validate_username"])
+        if validate:
+            login = self._settings.get(["username"])
+        else:
+            login = (
+                self._settings.get(["username"])
+                + "@"
+                + self._settings.get(["servername"])
+            )
+
         passw = self._settings.get(["server_pass"])
         phone_numb = self._settings.get(["phone_numb"])
         carrier_addr = self._settings.get(["carrier_address"])
