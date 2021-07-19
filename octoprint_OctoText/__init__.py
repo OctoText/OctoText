@@ -190,7 +190,7 @@ class OctoTextPlugin(
         data = octoprint.plugin.SettingsPlugin.on_settings_load(self)
 
         # only return our restricted settings to admin users - this is only needed for OctoPrint <= 1.2.16
-        restricted = ("server_pass", "server_login")
+        restricted = ("server_pass", "username", "servername")
         for r in restricted:
             if r in data and (
                 current_user is None
@@ -203,15 +203,18 @@ class OctoTextPlugin(
 
     def get_settings_restricted_paths(self):
         # only used in OctoPrint versions > 1.2.16
-        return {"admin": [["server_pass"], ["server_login"]]}
+        return {"admin": [["server_pass"], ["username"], ["servername"]]}
 
     def on_settings_save(self, data):
 
         if "server_pass" in data and not data["server_pass"]:
             data["server_pass"] = None
 
-        if "server_login" in data and not data["server_login"]:
-            data["server_login"] = None
+        if "servername" in data and not data["servername"]:
+            data["servername"] = None
+
+        if "username" in data and not data["username"]:
+            data["username"] = None
 
         octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
 
@@ -384,7 +387,10 @@ class OctoTextPlugin(
 
         self._logger.debug(f"Appearance name (subject): {appearance_name}")
 
-        login = self._settings.get(["server_login"])
+        login = (
+            self._settings.get(["username"]) + "@" + self._settings.get(["servername"])
+        )
+        # login = self._settings.get(["server_login"])
         msg = EmailMessage()
         msg["Subject"] = appearance_name + ": " + title
         msg["From"] = login  # 'OctoText@outlook.com'
@@ -543,7 +549,9 @@ class OctoTextPlugin(
                 self._settings.get(["smtp_name"]),
                 self._settings.get(["smtp_port"]),
                 self._settings.get(["smtp_message"]),
-                self._settings.get(["server_login"]),
+                self._settings.get(["username"])
+                + "@"
+                + self._settings.get(["servername"]),
             )
         )
         # on loading of plugin look for the existence of the prusa or cura thumbnail plugins
