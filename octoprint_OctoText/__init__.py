@@ -245,9 +245,8 @@ class OctoTextPlugin(
 
         # login to the mail account
         self._logger.debug(login)
-        self._logger.info('logging in bro2')
         if passw:
-            self._logger.debug('password supplied, attempting to log into mail server')
+            self._logger.debug('Password supplied, attempting to log into mail server')
             try:
                 SMTP_server.login(login, passw)
             except Exception as e:
