@@ -245,16 +245,21 @@ class OctoTextPlugin(
 
         # login to the mail account
         self._logger.debug(login)
-        try:
-            SMTP_server.login(login, passw)
-        except Exception as e:
-            self._logger.exception(
-                "Exception while logging into mail server {message}".format(
-                    message=str(e)
+        self._logger.info('logging in bro2')
+        if passw:
+            self._logger.debug('password supplied, attempting to log into mail server')
+            try:
+                SMTP_server.login(login, passw)
+            except Exception as e:
+                self._logger.exception(
+                    "Exception while logging into mail server {message}".format(
+                        message=str(e)
+                    )
                 )
-            )
-            SMTP_server.quit()
-            return ["LOGIN_E", None]
+                SMTP_server.quit()
+                return ["LOGIN_E", None]
+        else:
+            self._logger.debug('Password not supplied, proceeding without SMTP authentication.')
 
         email_addr = phone_numb + "@%s" % carrier_addr
         return [None, email_addr]
