@@ -269,8 +269,10 @@ class OctoTextPlugin(
 
         # login to the mail account
         self._logger.debug(login)
-        if passw:  # Only use SMTP auth if the password has been supplied, skip if blank - issue #91
-            self._logger.debug('Password supplied, attempting to log into mail server')
+        if (
+            passw
+        ):  # Only use SMTP auth if the password has been supplied, skip if blank - issue #91
+            self._logger.debug("Password supplied, attempting to log into mail server")
             try:
                 SMTP_server.login(login, passw)
             except Exception as e:
@@ -282,7 +284,9 @@ class OctoTextPlugin(
                 SMTP_server.quit()
                 return ["LOGIN_E", None]
         else:
-            self._logger.debug('Password not supplied, proceeding without SMTP authentication.')
+            self._logger.debug(
+                "Password not supplied, proceeding without SMTP authentication."
+            )
 
         email_addr = phone_numb + "@%s" % carrier_addr
         return [None, email_addr]
