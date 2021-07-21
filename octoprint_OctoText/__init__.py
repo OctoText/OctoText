@@ -387,13 +387,14 @@ class OctoTextPlugin(
 
         self._logger.debug(f"Appearance name (subject): {appearance_name}")
 
-        login = (
+        fromAddr = (
             self._settings.get(["username"]) + "@" + self._settings.get(["servername"])
         )
+
         # login = self._settings.get(["server_login"])
         msg = EmailMessage()
         msg["Subject"] = appearance_name + ": " + title
-        msg["From"] = login  # 'OctoText@outlook.com'
+        msg["From"] = fromAddr  # 'OctoText@outlook.com'
         msg["To"] = email_addr
         msg["Date"] = formatdate(localtime=True)
         content_string = " Message sent from: " + sender
@@ -419,6 +420,15 @@ class OctoTextPlugin(
                 )
 
         # Send text message through SMS gateway of destination number/address
+        validate = self._settings.get(["validate_username"])
+        if validate:
+            login = self._settings.get(["username"])
+        else:
+            login = (
+                self._settings.get(["username"])
+                + "@"
+                + self._settings.get(["servername"])
+            )
         try:
             SMTP_server.sendmail(login, email_addr, msg.as_string())
             SMTP_server.quit()
