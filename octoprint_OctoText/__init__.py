@@ -428,17 +428,8 @@ class OctoTextPlugin(
                 )
 
         # Send text message through SMS gateway of destination number/address
-        validate = self._settings.get(["validate_username"])
-        if validate:
-            login = self._settings.get(["username"])
-        else:
-            login = (
-                self._settings.get(["username"])
-                + "@"
-                + self._settings.get(["servername"])
-            )
         try:
-            SMTP_server.sendmail(login, email_addr, msg.as_string())
+            SMTP_server.sendmail(fromAddr, email_addr, msg.as_string())
             SMTP_server.quit()
         except Exception as e:
             self._logger.exception(
