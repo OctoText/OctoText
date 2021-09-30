@@ -338,7 +338,9 @@ class OctoTextPlugin(
                 from requests import get
 
                 tempFile = tempfile.NamedTemporaryFile(delete=False)
-                response = get(snapshot_url, verify=True)  # False
+                response = get(
+                    snapshot_url, verify=True, timeout=0.001
+                )  # adding timeout on url
                 response.raise_for_status()
                 tempFile.write(response.content)
                 tempFile.close()
