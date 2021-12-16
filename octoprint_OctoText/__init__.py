@@ -433,12 +433,7 @@ class OctoTextPlugin(
         validate = self._settings.get(["validate_username"])
         if validate:
             fromAddr = self._settings.get(["username"])
-        else:
-            fromAddr = (
-                self._settings.get(["username"])
-                + "@"
-                + self._settings.get(["servername"])
-            )
+
         try:
             SMTP_server.sendmail(fromAddr, email_addr, msg.as_string())
             SMTP_server.quit()
