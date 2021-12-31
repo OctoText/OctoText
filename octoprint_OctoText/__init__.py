@@ -339,7 +339,7 @@ class OctoTextPlugin(
 
                 tempFile = tempfile.NamedTemporaryFile(delete=False)
                 response = get(
-                    snapshot_url, verify=True, timeout=0.2
+                    snapshot_url, verify=False, timeout=5
                 )  # adding timeout on url
                 response.raise_for_status()
                 tempFile.write(response.content)
