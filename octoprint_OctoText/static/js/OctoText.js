@@ -39,9 +39,11 @@ $(function() {
                             type: "success"
                         });
                     } else {
-                        var text;
+                        var text, notice_type;
+                        notice_type = "error";
                         if (response.error === "SNAP") {
-                            text = gettext("Test message could not be sent to email server due to failure in opening your webcam, check your settings!");
+                            text = gettext("Test failure in opening your webcam, check your settings!");
+                            notice_type = "notice";
                         } else if (response.error === "LOGIN_E") {
                             text = gettext("Failure to login to your email account!");
                         } else if (response.error === "SENDM_E"){
@@ -52,9 +54,9 @@ $(function() {
                             text = gettext("Test message could not be sent, check log & your settings");
                         }
                         new PNotify({
-                            title: gettext("Test message could not be sent"),
+                            title: gettext("Test message problem!"),
                             text: text,
-                            type: "error"
+                            type: notice_type
                         });
                     }
                 },
