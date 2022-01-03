@@ -69,8 +69,10 @@ class OctoTextPlugin(
                     workToDo["title"],
                     workToDo["description"] + retry_str,
                     sender=workToDo["sender"],
-                    thumbnail=workToDo["thumbnail"],
+                    thumbnail=workToDo["filename"],
                     send_image=workToDo["send_image"],
+                    atype=workToDo["attachment_type"],
+                    ftype=workToDo["filetype"],
                 )
                 retries += 1
                 if retries > 5:
@@ -166,7 +168,9 @@ class OctoTextPlugin(
                         ("title", title),
                         ("description", description),
                         ("sender", printer_name),
-                        ("thumbnail", None),
+                        ("filename", None),
+                        ("attachment_type", "image"),
+                        ("filetype", "jpg"),
                         ("send_image", self._settings.get(["en_webcam"])),
                     ]
                 )
@@ -303,7 +307,15 @@ class OctoTextPlugin(
     #       True - no error
 
     def _send_message_with_webcam_image(
-        self, title, body, filename=None, sender=None, thumbnail=None, send_image=True
+        self,
+        title,
+        body,
+        filename=None,
+        sender=None,
+        thumbnail=None,
+        send_image=True,
+        atype="image",
+        ftype="jpg",
     ):
 
         self._logger.debug(
@@ -322,7 +334,7 @@ class OctoTextPlugin(
             sender = "OctoText"
 
         if thumbnail is not None:
-            return self._send_file(sender, thumbnail, title, body)
+            return self._send_file(sender, thumbnail, title, body, atype, ftype)
 
         if self._settings.get(["en_webcam"]) is False or send_image is False:
             return self._send_file(sender, "", title, body)
@@ -383,7 +395,7 @@ class OctoTextPlugin(
     #     None - for no error found - never returned to caller
     #   SENDM_E - error sending email from server
     #   True - no error
-    def _send_file(self, sender, path, title, body):
+    def _send_file(self, sender, path, title, body, atype="image", ftype="jpg"):
 
         # login to the SMTP account and mail server
         error, email_addr = self.smtp_login_server()
@@ -417,9 +429,11 @@ class OctoTextPlugin(
         if path != "":
             try:
                 fp = open(path, "rb")
-                filename = datetime.datetime.now().isoformat(timespec="minutes") + ".jpg"
+                filename = (
+                    datetime.datetime.now().isoformat(timespec="minutes") + "." + ftype
+                )
                 msg.add_attachment(
-                    fp.read(), maintype="image", subtype="jpg", filename=filename
+                    fp.read(), maintype=atype, subtype=ftype, filename=filename
                 )
                 fp.close()
             except Exception as e:
@@ -666,7 +680,9 @@ class OctoTextPlugin(
                         ("title", title),
                         ("description", description),
                         ("sender", printer_name),
-                        ("thumbnail", None),
+                        ("filename", None),
+                        ("attachment_type", "image"),
+                        ("filetype", "jpg"),
                         ("send_image", self._settings.get(["en_webcam"])),
                     ]
                 )
@@ -871,7 +887,9 @@ class OctoTextPlugin(
                     ("title", title),
                     ("description", description),
                     ("sender", printer_name),
-                    ("thumbnail", thumbnail_filename),
+                    ("filename", thumbnail_filename),
+                    ("attachment_type", "image"),
+                    ("filetype", "jpg"),
                     ("send_image", do_cam_snapshot),
                 ]
             )
