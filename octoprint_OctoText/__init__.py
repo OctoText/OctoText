@@ -51,59 +51,6 @@ class OctoTextPlugin(
     #       SMTP_E - for errors setting up the SMTP connection
     #       LOGIN_E - for errors logging into the host email account
     #       SENDM_E - error sending email from server
-    def worker(self):
-        while True:
-            self._logger.debug("NO Work being done")
-            workToDo = self.notifyQ.get()
-            # do the work
-            self._logger.debug(f"Work being done {workToDo}")
-            result = False
-            retries = 0
-            first_time = datetime.datetime.now()
-            while result is False:
-                if retries > 0:
-                    retry_str = " retries: " + str(retries)
-                else:
-                    retry_str = ""
-                result = self._send_message_with_webcam_image(
-                    workToDo["title"],
-                    workToDo["description"] + retry_str,
-                    sender=workToDo["sender"],
-                    thumbnail=workToDo["thumbnail"],
-                    send_image=workToDo["send_image"],
-                )
-                retries += 1
-                if retries > 5:
-                    break
-                if result in ["SMTP_E", "LOGIN_E", "SENDM_E"]:
-                    self._logger.debug(
-                        f"Retrying notification, error {result}: workToDo: {workToDo}"
-                    )
-                    time.sleep(30)
-                    result = False
-                else:
-                    break
-            now_time = datetime.datetime.now()
-            elapsed_time = now_time - first_time
-            if (
-                elapsed_time.seconds > 29
-            ):  # >= time.sleep(30) says we had at least one delayed notice
-                self._logger.debug(
-                    f"Retries sending message: {retries}. Time message delayed: {elapsed_time}"
-                )
-            self._logger.debug(f"Send Message result: {result}")
-            self.notifyQ.task_done()
-            time.sleep(60)  # make this adjustable?
-
-    # This function is started as a thread and blocks on a queue looking for work. It sends all
-    # of the notifications except for the test message (because we want the error code to be reported
-    # to the user by an error notice).
-    # Occasionally I've seen delays of up to 15 minutes with text messages due to poor cell connections
-    # or just carrier issues - but this code seems to retry correctly on internet connection issues.
-    #   Retry-able error codes:
-    #       SMTP_E - for errors setting up the SMTP connection
-    #       LOGIN_E - for errors logging into the host email account
-    #       SENDM_E - error sending email from server
     def email_message_queue_worker(self):
         while True:
             self._logger.debug("NO Work being done")
@@ -222,19 +169,11 @@ class OctoTextPlugin(
             printer_name = self.get_printer_name()
             title = "Print Progress " + str(progress) + " percent finished."
             description = path
-            # TODO Cleanup
-            # self.notifyQ.put(
-            #     dict(
-            #         [
-            #             ("title", title),
-            #             ("description", description),
-            #             ("sender", printer_name),
-            #             ("thumbnail", None),
-            #             ("send_image", self._settings.get(["en_webcam"])),
-            #         ]
-            #     )
-            # )
-            self._prepare_email_message_and_send(title, description, printer_name, None, self._settings.get(["en_webcam"]))
+            self._prepare_email_message_and_send(title,
+                                                 description,
+                                                 printer_name,
+                                                 None,
+                                                 self._settings.get(["en_webcam"]))
 
     ##~~ AssetPlugin mixin
 
@@ -355,161 +294,6 @@ class OctoTextPlugin(
         email_addr = phone_numb + "@%s" % carrier_addr
         return [None, email_addr]
 
-    # send an image with the message. have to watch for errors connecting to the camera
-    # Returns:
-    #   SNAP - a failure to get an image from the webcam
-    #   FILE_E - filesystem error
-    #   True - no error
-    #   _send_file results
-    #       SMTP_E - for errors setting up the SMTP connection
-    #       LOGIN_E - for errors logging into the host email account
-    #       SENDM_E - error sending email from server
-    #       True - no error
-
-    def _send_message_with_webcam_image(
-        self, title, body, filename=None, sender=None, thumbnail=None, send_image=True
-    ):
-
-        self._logger.debug(
-            "Enable webcam setting {}".format(self._settings.get(["en_webcam"]))
-        )
-
-        if filename is None:
-            import random
-            import string
-
-            filename = "test-{}.jpg".format(
-                "".join([random.choice(string.ascii_letters) for _ in range(16)])
-            )
-
-        if sender is None:
-            sender = "OctoText"
-
-        if thumbnail is not None:
-            return self._send_file(sender, thumbnail, title, body)
-
-        if self._settings.get(["en_webcam"]) is False or send_image is False:
-            return self._send_file(sender, "", title, body)
-
-        snapshot_url = self._settings.global_get(["webcam", "snapshot"])
-        result = True
-        self._logger.debug(f"filename for image: {filename}")
-        self._logger.debug(f"Snapshot URL is: {snapshot_url}")
-        if snapshot_url and send_image:
-            try:
-                import tempfile
-
-                from requests import get
-
-                tempFile = tempfile.NamedTemporaryFile(delete=False)
-                response = get(
-                    snapshot_url, verify=False, timeout=5
-                )  # adding timeout on url
-                response.raise_for_status()
-                tempFile.write(response.content)
-                tempFile.close()
-            except Exception as e:
-                self._logger.exception(
-                    "Exception while fetching snapshot from webcam: {message}".format(
-                        message=str(e)
-                    )
-                )
-                # send message without webcam snapshot (enabled but not available)
-                path = self._basefolder + "/static/img/offline.jpg"
-                self._send_file(sender, path, title, body)
-                return "SNAP"
-            else:
-                # ffmpeg can't guess file type it seems
-                os.rename(tempFile.name, tempFile.name + ".jpg")
-                tempFile.name += ".jpg"
-
-                self._logger.debug(f"Webcam tempfile {tempFile.name}")
-                self._process_snapshot(tempFile.name)
-                result = self._send_file(sender, tempFile.name, title, body)
-                if result is True:
-                    try:
-                        os.remove(tempFile.name)
-                    except Exception as e:
-                        self._logger.exception(
-                            "Could not remove temporary snapshot file {} e:{}".format(
-                                tempFile.name, str(e)
-                            )
-                        )
-                        return "FILE_E"
-
-        return result
-
-    # format the MMS message - both text and image.
-    # Returns:
-    #   From login server:
-    #     SMTP - for errors setting up the SMTP connection
-    #     LOGIN_E - for errors logging into the host email account
-    #     None - for no error found - never returned to caller
-    #   SENDM_E - error sending email from server
-    #   True - no error
-    def _send_file(self, sender, path, title, body):
-
-        # login to the SMTP account and mail server
-        error, email_addr = self.smtp_login_server()
-
-        if not (error is None):
-            return error
-
-        appearance_name = self.get_printer_name()
-        if body is None:
-            body = ""
-
-        self._logger.debug(f"Appearance name (subject): {appearance_name}")
-
-        fromAddr = (
-            self._settings.get(["username"]) + "@" + self._settings.get(["servername"])
-        )
-
-        # login = self._settings.get(["server_login"])
-        msg = EmailMessage()
-        msg["Subject"] = appearance_name + ": " + title
-        msg["From"] = fromAddr  # 'OctoText@outlook.com'
-        msg["To"] = email_addr
-        msg["Date"] = formatdate(localtime=True)
-        content_string = " Message sent from: " + sender
-        msg.set_content(
-            body + content_string, charset="utf-8"
-        )  # utf-8 allows non ascii characters in the test string
-
-        self._logger.debug(f"path for image: {path}")
-
-        if path != "":
-            try:
-                fp = open(path, "rb")
-                filename = datetime.datetime.now().isoformat(timespec="minutes") + ".jpg"
-                msg.add_attachment(
-                    fp.read(), maintype="image", subtype="jpg", filename=filename
-                )
-                fp.close()
-            except Exception as e:
-                self._logger.exception(
-                    "Exception while opening file for snapshot, {message}".format(
-                        message=str(e)
-                    )
-                )
-
-        # Send text message through SMS gateway of destination number/address
-        validate = self._settings.get(["validate_username"])
-        if validate:
-            fromAddr = self._settings.get(["username"])
-
-        try:
-            SMTP_server.sendmail(fromAddr, email_addr, msg.as_string())
-            SMTP_server.quit()
-        except Exception as e:
-            self._logger.exception(
-                "Exception while logging into SMTP server(send_file) {message}".format(
-                    message=str(e)
-                )
-            )
-            return "SENDM_E"
-        return True
-
     # this code will rotate or flip the image based on the webcam settings. borrowed from foosel
     def _process_snapshot(self, snapshot_path, pixfmt="yuv420p"):
         hflip = self._settings.global_get_boolean(["webcam", "flipH"])
@@ -556,7 +340,16 @@ class OctoTextPlugin(
                 )
             )
 
-    # title:str, description:str, sender:str, thumbnail:str, send_image:boolean
+    # Prepare the email for sending and put it into the message queue or the email is dircely send
+    # Returns (not correct):
+    #   SNAP - a failure to get an image from the webcam
+    #   FILE_E - filesystem error
+    #   True - no error
+    #   _send_file results
+    #       SMTP_E - for errors setting up the SMTP connection
+    #       LOGIN_E - for errors logging into the host email account
+    #       SENDM_E - error sending email from server
+    #       True - no error
     def _prepare_email_message_and_send(self, title, body, sender=None, thumbnail=None, send_image=True, direct_send=False):
         self._logger.debug(f"Preparing EMail '{title}' and adding to Notification-Queue")
         self._logger.debug("Enable webcam setting {}".format(self._settings.get(["en_webcam"])))
@@ -646,7 +439,7 @@ class OctoTextPlugin(
             self.notifyQ.put(email_message)
         return result
 
-    # load the snapshot image, rotate and store the image inn the filesystem. return the image path location
+    # load the snapshot image from camera, rotate and store the image into the filesystem. return the image path location
     # return dict( path:thePath, result:"SNAP")
     def _create_image_path_from_snapshot(self):
         try:
@@ -670,7 +463,6 @@ class OctoTextPlugin(
             self._logger.debug(f"Webcam tempfile {tempFile.name}")
             self._process_snapshot(tempFile.name)
 
-            # result = self._send_file(sender, tempFile.name, title, body)
             return {
                 "path": tempFile.name,
                 "result": "DELETE_IMAGE_AFTER_SENT"
@@ -683,8 +475,6 @@ class OctoTextPlugin(
             )
             # send message without webcam snapshot (enabled but not available)
             path = self._basefolder + "/static/img/offline.jpg"
-            # self._send_file(sender, path, title, body)
-            # return "SNAP"
             return {
                 "path": path,
                 "result": "SNAP"
@@ -734,21 +524,19 @@ class OctoTextPlugin(
             return
         self._logger.debug(f"received a message command: {command} data: {data} ")
 
+        # TODO check the data before we put it on the queue
+        # there is no way to notify the caller that there was an error so just log the
+        # issues
+        # subject and to are required!
+
         email_message = data
         subject = email_message["Subject"]
         to = email_message["To"]
 
         if subject is None or to is None:
             return False
+        # put it into the notify queue
         self.notifyQ.put(email_message)
-        # send_data = data["test"]
-        # # TODO check the data before we put it on the queue
-        # # there is no way to notify the caller that there was an error so just log the
-        # # issues
-        # # title and description are required!
-        # if send_data["title"] is None or send_data["description"] is None:
-        #     return False
-        # self.notifyQ.put(send_data)
 
         return True
 
@@ -812,7 +600,6 @@ class OctoTextPlugin(
         if os.path.exists(self.cura_folder):
             self._logger.info(f"Cura thumbnails loaded: {self.cura_folder}")
         self._logger.info("--------------------------------------------")
-        # Thread(target=self.worker, daemon=True).start()
         Thread(target=self.email_message_queue_worker, daemon=True).start()
 
         # TODO Not needed,  only helper-function allowed: self._plugin_manager.register_message_receiver(self.receive_api_command)
@@ -1099,18 +886,7 @@ class OctoTextPlugin(
             return
 
         printer_name = self.get_printer_name()
-        # TODO Cleanup
-        # self.notifyQ.put(
-        #     dict(
-        #         [
-        #             ("title", title),
-        #             ("description", description),
-        #             ("sender", printer_name),
-        #             ("thumbnail", thumbnail_filename),
-        #             ("send_image", do_cam_snapshot),
-        #         ]
-        #     )
-        # )
+
         self._prepare_email_message_and_send(title, description, printer_name, thumbnail_filename, do_cam_snapshot)
 
     ##~~ Softwareupdate hook
