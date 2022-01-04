@@ -294,52 +294,6 @@ class OctoTextPlugin(
         email_addr = phone_numb + "@%s" % carrier_addr
         return [None, email_addr]
 
-    # this code will rotate or flip the image based on the webcam settings. borrowed from foosel
-    def _process_snapshot(self, snapshot_path, pixfmt="yuv420p"):
-        hflip = self._settings.global_get_boolean(["webcam", "flipH"])
-        vflip = self._settings.global_get_boolean(["webcam", "flipV"])
-        rotate = self._settings.global_get_boolean(["webcam", "rotate90"])
-        ffmpeg = self._settings.global_get(["webcam", "ffmpeg"])
-
-        if (
-            not ffmpeg
-            or not os.access(ffmpeg, os.X_OK)
-            or (not vflip and not hflip and not rotate)
-        ):
-            return
-
-        ffmpeg_command = [ffmpeg, "-y", "-i", snapshot_path]
-
-        rotate_params = [f"format={pixfmt}"]  # workaround for foosel/OctoPrint#1317
-        if rotate:
-            rotate_params.append("transpose=2")  # 90 degrees counter clockwise
-        if hflip:
-            rotate_params.append("hflip")  # horizontal flip
-        if vflip:
-            rotate_params.append("vflip")  # vertical flip
-
-        ffmpeg_command += [
-            "-vf",
-            sarge.shell_quote(",".join(rotate_params)),
-            snapshot_path,
-        ]
-        self._logger.debug("Running: {}".format(" ".join(ffmpeg_command)))
-        try:
-            p = sarge.run(ffmpeg_command)
-        except Exception as e:
-            self._logger.debug(f"Exception running ffmpeg {e}")
-            return
-
-        if p.returncode == 0:
-            self._logger.debug("Rotated/flipped image with ffmpeg")
-        else:
-            self._logger.warn(
-                "Failed to rotate/flip image with ffmpeg, "
-                "got return code {}: {}, {}".format(
-                    p.returncode, p.stdout.text, p.stderr.text
-                )
-            )
-
     # Prepare the email for sending and put it into the message queue or the email is dircely send
     # Returns (not correct):
     #   SNAP - a failure to get an image from the webcam
@@ -500,6 +454,52 @@ class OctoTextPlugin(
             )
             return "SENDM_E"
         return True
+
+    # this code will rotate or flip the image based on the webcam settings. borrowed from foosel
+    def _process_snapshot(self, snapshot_path, pixfmt="yuv420p"):
+        hflip = self._settings.global_get_boolean(["webcam", "flipH"])
+        vflip = self._settings.global_get_boolean(["webcam", "flipV"])
+        rotate = self._settings.global_get_boolean(["webcam", "rotate90"])
+        ffmpeg = self._settings.global_get(["webcam", "ffmpeg"])
+
+        if (
+            not ffmpeg
+            or not os.access(ffmpeg, os.X_OK)
+            or (not vflip and not hflip and not rotate)
+        ):
+            return
+
+        ffmpeg_command = [ffmpeg, "-y", "-i", snapshot_path]
+
+        rotate_params = [f"format={pixfmt}"]  # workaround for foosel/OctoPrint#1317
+        if rotate:
+            rotate_params.append("transpose=2")  # 90 degrees counter clockwise
+        if hflip:
+            rotate_params.append("hflip")  # horizontal flip
+        if vflip:
+            rotate_params.append("vflip")  # vertical flip
+
+        ffmpeg_command += [
+            "-vf",
+            sarge.shell_quote(",".join(rotate_params)),
+            snapshot_path,
+        ]
+        self._logger.debug("Running: {}".format(" ".join(ffmpeg_command)))
+        try:
+            p = sarge.run(ffmpeg_command)
+        except Exception as e:
+            self._logger.debug(f"Exception running ffmpeg {e}")
+            return
+
+        if p.returncode == 0:
+            self._logger.debug("Rotated/flipped image with ffmpeg")
+        else:
+            self._logger.warn(
+                "Failed to rotate/flip image with ffmpeg, "
+                "got return code {}: {}, {}".format(
+                    p.returncode, p.stdout.text, p.stderr.text
+                )
+            )
 
     def get_api_commands(self):
         return {
@@ -679,18 +679,6 @@ class OctoTextPlugin(
             # title = "Print Progress " + str(progress) + " percent left."
             title = "Print Progress " + str(time_left) + " time to finish."
             description = self.current_path
-            # TODO Cleanup
-            # self.notifyQ.put(
-            #     dict(
-            #         [
-            #             ("title", title),
-            #             ("description", description),
-            #             ("sender", printer_name),
-            #             ("thumbnail", None),
-            #             ("send_image", self._settings.get(["en_webcam"])),
-            #         ]
-            #     )
-            # )
             self._prepare_email_message_and_send(title, description, printer_name, None, self._settings.get(["en_webcam"]))
         return
 
