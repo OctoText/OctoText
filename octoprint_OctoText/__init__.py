@@ -42,16 +42,21 @@ class OctoTextPlugin(
     prusa_folder = ""
     cura_folder = ""
 
-    # This function is started as a thread and blocks on a queue looking for work. It sends all
-    # of the notifications except for the test message (because we want the error code to be reported
-    # to the user by an error notice).
-    # Occasionally I've seen delays of up to 15 minutes with text messages due to poor cell connections
-    # or just carrier issues - but this code seems to retry correctly on internet connection issues.
-    #   Retry-able error codes:
-    #       SMTP_E - for errors setting up the SMTP connection
-    #       LOGIN_E - for errors logging into the host email account
-    #       SENDM_E - error sending email from server
     def email_message_queue_worker(self):
+        """
+        This function is started as a thread and blocks on a queue looking for work. It sends all
+        of the notifications except for the test message (because we want the error code to be reported
+        to the user by an error notice).
+        Occasionally I've seen delays of up to 15 minutes with text messages due to poor cell connections
+        or just carrier issues - but this code seems to retry correctly on internet connection issues.
+        Retry-able error codes:
+            SMTP_E - for errors setting up the SMTP connection
+
+            LOGIN_E - for errors logging into the host email account
+
+            SENDM_E - error sending email from server
+        :return: None
+        """
         while True:
             self._logger.debug("NO Work being done")
             email_message = self.notifyQ.get()
@@ -83,9 +88,7 @@ class OctoTextPlugin(
                 if retries > 5:
                     break
                 if result in ["SMTP_E", "LOGIN_E", "SENDM_E"]:
-                    self._logger.debug(
-                        f"Retrying notification, error {result}: email: {email_message}"
-                    )
+                    self._logger.debug(f"Retrying notification, error {result}")
                     time.sleep(30)
                     result = False
                 else:
@@ -218,15 +221,18 @@ class OctoTextPlugin(
 
         octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
 
-    # Login to the mail server
-    # Returns:
-    #  first position:
-    #   SMTP_E for errors setting up the SMTP connection
-    #   LOGIN_E for errors logging into the host email account
-    #   None for no error found
-    #  second position:
-    #   email address of the recipient when there is no error, None otherwise
     def smtp_login_server(self):
+        """
+        Login to the mail server
+
+        :return:
+            first position:
+                SMTP_E for errors setting up the SMTP connection
+                LOGIN_E for errors logging into the host email account
+                None for no error found.
+            second position:
+                email address of the recipient when there is no error, None otherwise
+        """
         global SMTP_server
         name = self._settings.get(["smtp_name"])
         port = self._settings.get(["smtp_port"])
@@ -291,19 +297,27 @@ class OctoTextPlugin(
         email_addr = phone_numb + "@%s" % carrier_addr
         return [None, email_addr]
 
-    # Prepare the email for sending and put it into the message queue or the email is dircely send
-    # Returns (not correct):
-    #   SNAP - a failure to get an image from the webcam
-    #   FILE_E - filesystem error
-    #   True - no error
-    #   _send_file results
-    #       SMTP_E - for errors setting up the SMTP connection
-    #       LOGIN_E - for errors logging into the host email account
-    #       SENDM_E - error sending email from server
-    #       True - no error
     def _prepare_email_message_and_send(
         self, title, body, sender=None, thumbnail=None, send_image=True, direct_send=False
     ):
+        """
+        Prepare the email for sending and put it into the message queue or the email is directly sent
+
+        :param title: Email title
+        :param body: body of email
+        :param sender: email of sender
+        :param thumbnail: thumbnail image path
+        :param send_image: boolean True for thumbnail
+        :param direct_send: boolean True for preformatted email
+        :return: SNAP - a failure to get an image from the webcam
+        FILE_E - filesystem error
+        True - no error
+        _send_file results
+        SMTP_E - for errors setting up the SMTP connection
+        LOGIN_E - for errors logging into the host email account
+        SENDM_E - error sending email from server
+        True - no error
+        """
         self._logger.debug(f"Preparing EMail '{title}' and adding to Notification-Queue")
         self._logger.debug(
             "Enable webcam setting {}".format(self._settings.get(["en_webcam"]))
@@ -429,7 +443,7 @@ class OctoTextPlugin(
             return {"path": path, "result": "SNAP"}
         pass
 
-    # Send the email to the the smtp-server
+    # Send the email to the smtp-server
     def _send_email_message(self, email_message):
         # login to the SMTP account and mail server
         error, email_addr = self.smtp_login_server()
