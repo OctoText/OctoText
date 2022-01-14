@@ -42,6 +42,7 @@ class OctoTextPlugin(
     prusa_folder = ""
     cura_folder = ""
 
+
     def email_message_queue_worker(self):
         """
         This function is started as a thread and blocks on a queue looking for work. It sends all
@@ -88,6 +89,7 @@ class OctoTextPlugin(
                 if retries > 5:
                     break
                 if result in ["SMTP_E", "LOGIN_E", "SENDM_E"]:
+
                     self._logger.debug(f"Retrying notification, error {result}")
                     time.sleep(30)
                     result = False
@@ -171,9 +173,12 @@ class OctoTextPlugin(
             printer_name = self.get_printer_name()
             title = "Print Progress " + str(progress) + " percent finished."
             description = path
-            self._prepare_email_message_and_send(
-                title, description, printer_name, None, self._settings.get(["en_webcam"])
-            )
+            self._prepare_email_message_and_send(title,
+                                                 description,
+                                                 printer_name,
+                                                 None,
+                                                 self._settings.get(["en_webcam"]))
+
 
     ##~~ AssetPlugin mixin
 
@@ -297,6 +302,7 @@ class OctoTextPlugin(
         email_addr = phone_numb + "@%s" % carrier_addr
         return [None, email_addr]
 
+
     def _prepare_email_message_and_send(
         self, title, body, sender=None, thumbnail=None, send_image=True, direct_send=False
     ):
@@ -408,10 +414,12 @@ class OctoTextPlugin(
             self.notifyQ.put(email_message)
         return result
 
+
     # load the snapshot image from camera, rotate and store the image into the filesystem. return the image path
     # location return dict( path:thePath, result:"SNAP")
     def _create_image_path_from_snapshot(self):
         try:
+
             # reading webcam snapshot image
             import tempfile
 
@@ -540,12 +548,14 @@ class OctoTextPlugin(
 
         if command != self._identifier:
             return
+
         self._logger.debug(f"received a message command: {command}")
 
         # TODO check the data before we put it on the queue
         # there is no way to notify the caller that there was an error so just log the
         # issues
         # subject and to are required!
+
         email_message = data
 
         if email_message["From"] is None:
@@ -580,14 +590,11 @@ class OctoTextPlugin(
             self._logger.debug("Sending text with image")
 
             # title, body, sender=None, thumbnail=None, send_image=True, direct_send=True
-            result = self._prepare_email_message_and_send(
-                "Test from the OctoText Plugin.",
-                self._settings.get(["smtp_message"]),
-                sender="OctoText",
-                direct_send=True,
-            )
+            result = self._prepare_email_message_and_send("Test from the OctoText Plugin.",
+                                                          self._settings.get(["smtp_message"]),
+                                                          sender="OctoText",
+                                                          direct_send=True)
             pass
-
         except Exception as e:
             self._logger.exception(
                 "Exception while sending text, {message}".format(message=str(e))
@@ -711,6 +718,7 @@ class OctoTextPlugin(
             # title = "Print Progress " + str(progress) + " percent left."
             title = "Print Progress " + str(time_left) + " time to finish."
             description = self.current_path
+
             self._prepare_email_message_and_send(
                 title, description, printer_name, None, self._settings.get(["en_webcam"])
             )
@@ -909,9 +917,8 @@ class OctoTextPlugin(
 
         printer_name = self.get_printer_name()
 
-        self._prepare_email_message_and_send(
-            title, description, printer_name, thumbnail_filename, do_cam_snapshot
-        )
+        self._prepare_email_message_and_send(title, description, printer_name, thumbnail_filename, do_cam_snapshot)
+
 
     ##~~ Softwareupdate hook
 
