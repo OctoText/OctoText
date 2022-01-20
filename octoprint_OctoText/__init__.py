@@ -66,22 +66,15 @@ class OctoTextPlugin(
             result = False
             retries = 0
             first_time = datetime.datetime.now()
+            orig_subject = email_message["Subject"]
             while result is False:
                 if retries > 0:
                     retry_str = " retries: " + str(retries)
                 else:
                     retry_str = ""
-                # TODO add retry counter to body .. or subject. HINT: prevent text like this 'retries: 1 retries: 2 retries: 3...'
-                # current_subject = email_message["Subject"]
-                # current_content = email_message.get_payload(0, False)._payload
-                # email_message.set_content(current_content + retry_str)
-                # result = self._send_message_with_webcam_image(
-                #     workToDo["title"],
-                #     workToDo["description"] + retry_str,
-                #     sender=workToDo["sender"],
-                #     thumbnail=workToDo["thumbnail"],
-                #     send_image=workToDo["send_image"],
-                # )
+
+                del email_message["Subject"]
+                email_message["Subject"] = orig_subject + retry_str
                 result = self._send_email_message(email_message)
 
                 retries += 1
