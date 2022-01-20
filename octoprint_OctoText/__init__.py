@@ -42,7 +42,6 @@ class OctoTextPlugin(
     prusa_folder = ""
     cura_folder = ""
 
-
     def email_message_queue_worker(self):
         """
         This function is started as a thread and blocks on a queue looking for work. It sends all
@@ -67,22 +66,15 @@ class OctoTextPlugin(
             result = False
             retries = 0
             first_time = datetime.datetime.now()
+            orig_subject = email_message["Subject"]
             while result is False:
                 if retries > 0:
                     retry_str = " retries: " + str(retries)
                 else:
                     retry_str = ""
-                # TODO add retry counter to body .. or subject. HINT: prevent text like this 'retries: 1 retries: 2 retries: 3...'
-                # current_subject = email_message["Subject"]
-                # current_content = email_message.get_payload(0, False)._payload
-                # email_message.set_content(current_content + retry_str)
-                # result = self._send_message_with_webcam_image(
-                #     workToDo["title"],
-                #     workToDo["description"] + retry_str,
-                #     sender=workToDo["sender"],
-                #     thumbnail=workToDo["thumbnail"],
-                #     send_image=workToDo["send_image"],
-                # )
+
+                del email_message["Subject"]
+                email_message["Subject"] = orig_subject + retry_str
                 result = self._send_email_message(email_message)
 
                 retries += 1
@@ -173,12 +165,9 @@ class OctoTextPlugin(
             printer_name = self.get_printer_name()
             title = "Print Progress " + str(progress) + " percent finished."
             description = path
-            self._prepare_email_message_and_send(title,
-                                                 description,
-                                                 printer_name,
-                                                 None,
-                                                 self._settings.get(["en_webcam"]))
-
+            self._prepare_email_message_and_send(
+                title, description, printer_name, None, self._settings.get(["en_webcam"])
+            )
 
     ##~~ AssetPlugin mixin
 
@@ -302,7 +291,6 @@ class OctoTextPlugin(
         email_addr = phone_numb + "@%s" % carrier_addr
         return [None, email_addr]
 
-
     def _prepare_email_message_and_send(
         self, title, body, sender=None, thumbnail=None, send_image=True, direct_send=False
     ):
@@ -413,7 +401,6 @@ class OctoTextPlugin(
         else:
             self.notifyQ.put(email_message)
         return result
-
 
     # load the snapshot image from camera, rotate and store the image into the filesystem. return the image path
     # location return dict( path:thePath, result:"SNAP")
@@ -590,10 +577,12 @@ class OctoTextPlugin(
             self._logger.debug("Sending text with image")
 
             # title, body, sender=None, thumbnail=None, send_image=True, direct_send=True
-            result = self._prepare_email_message_and_send("Test from the OctoText Plugin.",
-                                                          self._settings.get(["smtp_message"]),
-                                                          sender="OctoText",
-                                                          direct_send=True)
+            result = self._prepare_email_message_and_send(
+                "Test from the OctoText Plugin.",
+                self._settings.get(["smtp_message"]),
+                sender="OctoText",
+                direct_send=True,
+            )
             pass
         except Exception as e:
             self._logger.exception(
@@ -917,8 +906,9 @@ class OctoTextPlugin(
 
         printer_name = self.get_printer_name()
 
-        self._prepare_email_message_and_send(title, description, printer_name, thumbnail_filename, do_cam_snapshot)
-
+        self._prepare_email_message_and_send(
+            title, description, printer_name, thumbnail_filename, do_cam_snapshot
+        )
 
     ##~~ Softwareupdate hook
 
