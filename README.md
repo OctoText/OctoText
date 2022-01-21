@@ -21,8 +21,10 @@ Prusa and Cura plugins. Just search for 'thumbnail' in the plugin manager to fin
 
 The thumbnail will only be sent on a print START event.
 
-This release also introduces retries for network outages, where messages will retry for up to 5 minutes. An API is introduced
-so other plugins can send custom messages through OctoText. An example plugin that shows how this works can be found 
+This release also introduces retries for network outages, where messages will retry for up to 5 minutes. 
+
+An API was introduced in revision 0.3.1, but has been changed drastically. Please use the new API if you would like your
+plugins to send custom messages through OctoText. An example plugin that shows how this works can be found 
 here: [TextAPI](https://github.com/berrystephenw/OctoPrint-Textapi).
 
 Print Pausing detects "waiting for user messages" that are sent by Prusa printers
@@ -67,7 +69,7 @@ Another resource for SMS gateways is the international site found here: https://
 
 SSL and TLS protocols are supported - you must enable SSL if you need to use it for your provider (TLS is the default).
 
-If you would rather receive email notifications in place of a text, then you should simply enter the user name and host address in the
+If you would rather receive email notifications in place of a text, then you should simply enter the username and host address in the
 destination fields instead of the phone/gateway entries:
 
 <img width="300" alt="Email setting" src="assets/img/email.png">
@@ -86,7 +88,7 @@ also doubles as a test message to check your settings. Just press it once and wa
 
 # Problems?
 If you are having trouble with your setup you can post on the discussion board, and I'll get to your question as soon as I can.
-Please include a copy of the octoprint log from the logging menu of octoprint. https://github.com/berrystephenw/OctoText/discussions
+Please include a copy of the octoprint log from the logging menu of octoprint after enabling the DEBUG log level. https://github.com/berrystephenw/OctoText/discussions
 # Credits
 - Gina Häußge https://github.com/foosel for creating Octoprint and the plugin Pushbullet from which some of this plugin is developed from.
 - jneilliii https://github.com/jneilliii for helping me get past some sticky problems in development
