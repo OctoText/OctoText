@@ -1,13 +1,7 @@
 # -*- coding: utf-8 -*-
-# This is the working branch - changes to this version include:
-# Redoing how notifications are sent.
-#
-# The current plan is to implement a thread-queue method
-#  New notifications will be put on a queue, which feeds a thread that is running
-#  consuming FIFO events to be sent
-#  The reason to do it this way is to allow for retries when the network goes away
-#  Network (internet interruptions) happen frequently on Starlink, so this should be
-#  easy to test.
+# OctoText
+# author: Stephen W. Berry
+# with contributions by others.
 #
 import datetime
 import os
