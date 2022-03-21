@@ -123,6 +123,7 @@ class OctoTextPlugin(
             "show_navbar_button": True,
             "show_fail_cancel": False,
             "mmu_timeout": 0,
+            "cc_field": None,
             "use_ssl": False,
         }
 
@@ -354,11 +355,18 @@ class OctoTextPlugin(
         carrier_addr = self._settings.get(["carrier_address"])
         email_addr = phone_numb + "@%s" % carrier_addr
 
+        cc_set = self._settings.get(["cc_field"])
+        cc_set = cc_set.replace("\n", "")
+        cc_set = cc_set.replace(" ", "")
+        cc_set = cc_set.split(",")
+        self._logger.debug(f"Cc: settings - {cc_set}")
+
         # setup email message with all collected data
         email_message = EmailMessage()
         email_message["Subject"] = appearance_name + ": " + title
         email_message["From"] = fromAddr  # 'OctoText@outlook.com'
         email_message["To"] = email_addr
+        email_message["Cc"] = cc_set
         email_message["Date"] = formatdate(localtime=True)
         content_string = " Message sent from: " + sender
         email_message.set_content(
@@ -439,9 +447,10 @@ class OctoTextPlugin(
             return error
 
         try:
-            SMTP_server.sendmail(
-                email_message["From"], email_message["To"], email_message.as_string()
-            )
+            SMTP_server.send_message(email_message)
+            # SMTP_server.sendmail(
+            #     email_message["From"], email_message["To"], email_message.as_string()
+            # )
             SMTP_server.quit()
         except Exception as e:
             self._logger.exception(
