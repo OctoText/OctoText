@@ -75,6 +75,7 @@ class OctoTextPlugin(
                 if retries > 5:
                     break
                 if result in ["SMTP_E", "LOGIN_E", "SENDM_E"]:
+
                     self._logger.debug(f"Retrying notification, error {result}")
                     time.sleep(30)
                     result = False
@@ -123,6 +124,7 @@ class OctoTextPlugin(
             "show_navbar_button": True,
             "show_fail_cancel": False,
             "mmu_timeout": 0,
+            "cc_field": None,
             "use_ssl": False,
         }
 
@@ -354,11 +356,18 @@ class OctoTextPlugin(
         carrier_addr = self._settings.get(["carrier_address"])
         email_addr = phone_numb + "@%s" % carrier_addr
 
+        cc_set = self._settings.get(["cc_field"])
+        cc_set = cc_set.replace("\n", "")
+        cc_set = cc_set.replace(" ", "")
+        cc_set = cc_set.split(",")
+        self._logger.debug(f"Cc: settings - {cc_set}")
+
         # setup email message with all collected data
         email_message = EmailMessage()
         email_message["Subject"] = appearance_name + ": " + title
         email_message["From"] = fromAddr  # 'OctoText@outlook.com'
         email_message["To"] = email_addr
+        email_message["Cc"] = cc_set
         email_message["Date"] = formatdate(localtime=True)
         content_string = " Message sent from: " + sender
         email_message.set_content(
@@ -399,6 +408,7 @@ class OctoTextPlugin(
     # location return dict( path:thePath, result:"SNAP")
     def _create_image_path_from_snapshot(self):
         try:
+
             # reading webcam snapshot image
             import tempfile
 
@@ -439,9 +449,10 @@ class OctoTextPlugin(
             return error
 
         try:
-            SMTP_server.sendmail(
-                email_message["From"], email_message["To"], email_message.as_string()
-            )
+            SMTP_server.send_message(email_message)
+            # SMTP_server.sendmail(
+            #     email_message["From"], email_message["To"], email_message.as_string()
+            # )
             SMTP_server.quit()
         except Exception as e:
             self._logger.exception(
@@ -527,12 +538,14 @@ class OctoTextPlugin(
 
         if command != self._identifier:
             return
+
         self._logger.debug(f"received a message command: {command}")
 
         # TODO check the data before we put it on the queue
         # there is no way to notify the caller that there was an error so just log the
         # issues
         # subject and to are required!
+
         email_message = data
 
         if email_message["From"] is None:
@@ -574,7 +587,6 @@ class OctoTextPlugin(
                 direct_send=True,
             )
             pass
-
         except Exception as e:
             self._logger.exception(
                 "Exception while sending text, {message}".format(message=str(e))
@@ -698,6 +710,7 @@ class OctoTextPlugin(
             # title = "Print Progress " + str(progress) + " percent left."
             title = "Print Progress " + str(time_left) + " time to finish."
             description = self.current_path
+
             self._prepare_email_message_and_send(
                 title, description, printer_name, None, self._settings.get(["en_webcam"])
             )

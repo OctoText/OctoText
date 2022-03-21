@@ -95,7 +95,7 @@
                 <span class="help-block">{% trans %}
                         This is the email gateway that is used to send the message. You must use a service that allows for SMTP connections. Some
                         free services do not allow you to connect via an outside client.
-                        This information it typically found in the settings page of your email provider.
+                        This information is typically found in the settings page of your email provider.
                     {% endtrans %}
                 </span>
             </div>
@@ -196,6 +196,19 @@
                             route messages to their SMS service OR a destination email host name. A gateway example would be vtext.com for Verizon.
                             Please see the link at the top of the page for more information on how to find this address for your provider. If you are
                             sending an email, put the host name here (ie outlook.com)
+                        {% endtrans %}
+                    </span>
+                </form>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label class="control-label">{{ _('CC field - add additional email addresses here:') }}</label>
+            <div class="controls">
+                <form class="form-inline">
+                    <textarea class="form-control" rows="3" data-bind="value: settings.settings.plugins.OctoText.cc_field" required placeholder="emusk@tesla.com, mtwain@books.com"></textarea>
+                    <span class="help-block">{% trans %}
+                            If you would like to add other destinations for your notifications, enter them here in a comma separated format.
                         {% endtrans %}
                     </span>
                 </form>
