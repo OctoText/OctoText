@@ -247,10 +247,10 @@ class OctoTextPlugin(
         try:
             self._logger.debug("before server smtplib")
             if self._settings.get(["use_ssl"]):
-                SMTP_server = smtplib.SMTP_SSL(name, port, timeout=5)
+                SMTP_server = smtplib.SMTP_SSL(name, port, timeout=10)
                 SMTP_server.ehlo()
             else:
-                SMTP_server = smtplib.SMTP(name, port, timeout=5)
+                SMTP_server = smtplib.SMTP(name, port, timeout=10)
                 error = SMTP_server.starttls()
                 self._logger.debug(f"startttls() {error}")
             self._logger.debug(f"SMTP_server {SMTP_server}")
@@ -269,6 +269,7 @@ class OctoTextPlugin(
         ):  # Only use SMTP auth if the password has been supplied, skip if blank - issue #91
             self._logger.debug("Password supplied, attempting to log into mail server")
             try:
+                # self._logger.debug(f"*** Password : {passw}")
                 SMTP_server.login(login, passw)
             except Exception as e:
                 self._logger.exception(
@@ -356,18 +357,20 @@ class OctoTextPlugin(
         carrier_addr = self._settings.get(["carrier_address"])
         email_addr = phone_numb + "@%s" % carrier_addr
 
-        cc_set = self._settings.get(["cc_field"])
-        cc_set = cc_set.replace("\n", "")
-        cc_set = cc_set.replace(" ", "")
-        cc_set = cc_set.split(",")
-        self._logger.debug(f"Cc: settings - {cc_set}")
-
         # setup email message with all collected data
         email_message = EmailMessage()
+
+        cc_set = self._settings.get(["cc_field"])
+        if cc_set is not None:
+            cc_set = cc_set.replace("\n", "")
+            cc_set = cc_set.replace(" ", "")
+            cc_set = cc_set.split(",")
+            self._logger.debug(f"Cc: settings - {cc_set}")
+            email_message["Cc"] = cc_set
+
         email_message["Subject"] = appearance_name + ": " + title
         email_message["From"] = fromAddr  # 'OctoText@outlook.com'
         email_message["To"] = email_addr
-        email_message["Cc"] = cc_set
         email_message["Date"] = formatdate(localtime=True)
         content_string = " Message sent from: " + sender
         email_message.set_content(

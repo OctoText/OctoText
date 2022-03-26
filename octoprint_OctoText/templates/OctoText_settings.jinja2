@@ -1,10 +1,145 @@
 <form class="form-horizontal">
     <fieldset>
+        <legend>{{ _('OctoText') }}</legend>
+        <p> OctoText is essentially an email creation application. In order to use this you must setup an email account that is
+        used to send your messages so the notifications that you select can be forwarded to the addresses that you want.
+        A Text message is sent as an email to your cell carrier text gateway</p>
+
+    </fieldset>
+    <fieldset>
+        <legend>{{ _('EMail Configuration') }}</legend>
+
+        <p class="help-block">{% trans %}
+                Please follow the guide here if you have questions on where to get the information needed below: <a href="https://github.com/berrystephenw/OctoText.git">OctoText Readme</a>
+                Your email provider will publish the SMTP port and gateway used for external mail.
+            {% endtrans %}
+        </p>
+
+        <div class="control-group">
+            <label class="control-label">{{ _('SMTP gateway') }}</label>
+            <div class="controls">
+                <input class="input-large" type="text" data-bind="value: settings.settings.plugins.OctoText.smtp_name" required>
+                <span class="help-block">{% trans %}
+                        This is the email gateway that is used to send the message. You must use a service that allows for SMTP connections. Some
+                        free services do not allow you to connect via an outside client.
+                        This information is typically found in the settings page of your email provider.
+                    {% endtrans %}
+                </span>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label class="control-label">{{ _('SMTP Port') }}</label>
+            <div class="controls">
+                <input class="input-mini" type="number" min="1" max="999" data-bind="value: settings.settings.plugins.OctoText.smtp_port" required>
+                <span class="help-block">{% trans %}
+                        This is the port that your email provider gives you for the SMTP service.
+                    {% endtrans %}
+                </span>
+            </div>
+            <label class="checkbox">
+                <input type="checkbox" value="Print Paused" data-bind="checked: settings.settings.plugins.OctoText.use_ssl">
+                Checking this box will force SSL encryption (the usual port is 465). TLS is the default protocol (typically uses port 587).
+            </label>
+        </div>
+
+        <div class="control-group">
+            <label class="control-label">{{ _('Message') }}</label>
+            <div class="controls">
+                <input class="input-large" type="text" data-bind="value: settings.settings.plugins.OctoText.smtp_message">
+                <span class="help-block">{% trans %}
+                        This is the default message sent - just for testing purposes.
+                    {% endtrans %}
+                </span>
+            </div>
+        </div>
+
+        <div class="control-group" data-bind="visible: false" >
+            <label class="control-label">{{ _('Subject') }}</label>
+            <div class="controls">
+                <input class="input-large" type="text" data-bind="value: settings.settings.plugins.OctoText.smtp_alert">
+                <span class="help-block">{% trans %}
+                        The alert message subject. Mostly for testing. OctoText will create a subject heading based on the type
+                        of message being sent.
+                        *Currently not used*
+                    {% endtrans %}
+                </span>
+            </div>
+        </div>
+
+        <label class="checkbox">
+            <input type="checkbox" value="Validate SMTP with username only" data-bind="checked: settings.settings.plugins.OctoText.validate_username">
+            Check to use username only authentication. Rarely used option for mail servers that require a username only SMTP login.
+        </label>
+
+        <legend>{{ _('From:') }}</legend>
+        <p>This is the email address you have setup for the service.</p>
+        <div class="control-group">
+            <label class="control-label">{{ _('Username and host address') }}</label>
+            <div class="controls">
+                <form class="form-inline">
+                    <input class="input-small" type="text" data-bind="value: settings.settings.plugins.OctoText.username" required placeholder="6038675309">
+                    <span class="add-on">@</span>
+                    <input class="input-large" type="text" data-bind="value: settings.settings.plugins.OctoText.servername" required placeholder="gateway.com">
+                    <span class="help-block">{% trans %}
+                            Enter the username of the email account and server domain name (ie outlook.com).
+                        {% endtrans %}
+                    </span>
+                </form>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label class="control-label">{{ _('Email password') }}</label>
+            <div class="controls">
+                <input class="input-large" type="password" data-bind="value: settings.settings.plugins.OctoText.server_pass" required>
+                <span class="help-block">{% trans %}
+                        This is the password for your email account.  Leave blank to disable SMTP authentication.
+                    {% endtrans %}
+                </span>
+            </div>
+        </div>
+
+        <legend>{{ _('To:') }}</legend>
+        <p> This is your destination address.</p>
+        <div class="control-group">
+            <label class="control-label">{{ _('Phone number OR user name @ Gateway OR Email address') }}</label>
+            <div class="controls">
+                <form class="form-inline">
+                    <input class="input-small" type="text" data-bind="value: settings.settings.plugins.OctoText.phone_numb" required placeholder="6038675309">
+                    <span class="add-on">@</span>
+                    <input class="input-large" type="text" data-bind="value: settings.settings.plugins.OctoText.carrier_address" required placeholder="gateway.com">
+                    <span class="help-block">{% trans %}
+                            Enter the phone number of the recipient of the text (usually your mobile phone) OR If you are sending an email, Enter
+                            the <b>user name</b> (ie Octotext of Octotext@outlook.com). The second field is the host gateway address that carriers use to
+                            route messages to their SMS service OR a destination email host name. A gateway example would be vtext.com for Verizon.
+                            Please see the link at the top of the page for more information on how to find this address for your provider. If you are
+                            sending an email, put the host name here (ie outlook.com)
+                        {% endtrans %}
+                    </span>
+                </form>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label class="control-label">{{ _('CC field - add additional email addresses here:') }}</label>
+            <div class="controls">
+                <form class="form-inline">
+                    <textarea class="form-control" rows="3" data-bind="value: settings.settings.plugins.OctoText.cc_field" required placeholder="emusk@tesla.com, mtwain@books.com"></textarea>
+                    <span class="help-block">{% trans %}
+                            If you would like to add other destinations for your notifications, enter them here in a comma separated format. Otherwise leave
+                            this field blank.
+                        {% endtrans %}
+                    </span>
+                </form>
+            </div>
+        </div>
+
+        <legend>{{ _('Events') }}</legend>
         <p class="help-block">{% trans %}
                 Select the printer events to be texted or emailed.
             {% endtrans %}
         </p>
-        <legend>{{ _('Options') }}</legend>
         <label class="checkbox">
             <input type="checkbox" value="pictures with text" data-bind="checked: settings.settings.plugins.OctoText.en_webcam">
             Enable Webcam snapshots.
@@ -78,144 +213,7 @@
             </div>
         </div>
 
-    </fieldset>
-    <fieldset>
-        <legend>{{ _('EMail Configuration') }}</legend>
-
-        <p class="help-block">{% trans %}
-                Please follow the guide here if you have questions on where to get the information needed below: <a href="https://github.com/berrystephenw/OctoText.git">OctoText Readme</a>
-                Your email provider will publish the SMTP port and gateway used for external mail.
-            {% endtrans %}
-        </p>
-
-        <div class="control-group">
-            <label class="control-label">{{ _('SMTP gateway') }}</label>
-            <div class="controls">
-                <input class="input-large" type="text" data-bind="value: settings.settings.plugins.OctoText.smtp_name" required>
-                <span class="help-block">{% trans %}
-                        This is the email gateway that is used to send the message. You must use a service that allows for SMTP connections. Some
-                        free services do not allow you to connect via an outside client.
-                        This information is typically found in the settings page of your email provider.
-                    {% endtrans %}
-                </span>
-            </div>
-        </div>
-
-        <div class="control-group">
-            <label class="control-label">{{ _('SMTP Port') }}</label>
-            <div class="controls">
-                <input class="input-mini" type="number" min="1" max="999" data-bind="value: settings.settings.plugins.OctoText.smtp_port" required>
-                <span class="help-block">{% trans %}
-                        This is the port that your email provider gives you for the SMTP service.
-                    {% endtrans %}
-                </span>
-            </div>
-            <label class="checkbox">
-                <input type="checkbox" value="Print Paused" data-bind="checked: settings.settings.plugins.OctoText.use_ssl">
-                Checking this box will force SSL encryption (the usual port is 465). TLS is the default protocol (typically uses port 587).
-            </label>
-        </div>
-
-        <div class="control-group">
-            <label class="control-label">{{ _('Message') }}</label>
-            <div class="controls">
-                <input class="input-large" type="text" data-bind="value: settings.settings.plugins.OctoText.smtp_message">
-                <span class="help-block">{% trans %}
-                        This is the default message sent - just for testing purposes.
-                    {% endtrans %}
-                </span>
-            </div>
-        </div>
-
-        <div class="control-group" data-bind="visible: false" >
-            <label class="control-label">{{ _('Subject') }}</label>
-            <div class="controls">
-                <input class="input-large" type="text" data-bind="value: settings.settings.plugins.OctoText.smtp_alert">
-                <span class="help-block">{% trans %}
-                        The alert message subject. Mostly for testing. OctoText will create a subject heading based on the type
-                        of message being sent.
-                        *Currently not used*
-                    {% endtrans %}
-                </span>
-            </div>
-        </div>
-
-        <div class="control-group">
-            <label class="control-label">{{ _('Email address') }}</label>
-            <div class="controls">
-                <input class="input-large" type="text" data-bind="visible: false" data-bind="value: settings.settings.plugins.OctoText.server_login" required>
-                <span class="help-block">{% trans %}
-                        Enter your email address that you intend to use for OctoText. It is recommended that you set up an email account
-                        that is only used for this app.
-                    {% endtrans %}
-                </span>
-            </div>
-        </div>
-
-        <label class="checkbox">
-            <input type="checkbox" value="Validate SMTP with username only" data-bind="checked: settings.settings.plugins.OctoText.validate_username">
-            Check to use username only authentication. Rarely used option for mail servers that require a username only SMTP login.
-        </label>
-
-        <div class="control-group">
-            <label class="control-label">{{ _('Username and host address') }}</label>
-            <div class="controls">
-                <form class="form-inline">
-                    <input class="input-small" type="text" data-bind="value: settings.settings.plugins.OctoText.username" required placeholder="6038675309">
-                    <span class="add-on">@</span>
-                    <input class="input-large" type="text" data-bind="value: settings.settings.plugins.OctoText.servername" required placeholder="gateway.com">
-                    <span class="help-block">{% trans %}
-                            Enter the username of the email account and server domain name (ie outlook.com).
-                        {% endtrans %}
-                    </span>
-                </form>
-            </div>
-        </div>
-
-        <div class="control-group">
-            <label class="control-label">{{ _('Email password') }}</label>
-            <div class="controls">
-                <input class="input-large" type="password" data-bind="value: settings.settings.plugins.OctoText.server_pass" required>
-                <span class="help-block">{% trans %}
-                        This is the password for your email account.  Leave blank to disable SMTP authentication.
-                    {% endtrans %}
-                </span>
-            </div>
-        </div>
-
-        <div class="control-group">
-            <label class="control-label">{{ _('Phone number OR user name @ Gateway OR Email address') }}</label>
-            <div class="controls">
-                <form class="form-inline">
-                    <input class="input-small" type="text" data-bind="value: settings.settings.plugins.OctoText.phone_numb" required placeholder="6038675309">
-                    <span class="add-on">@</span>
-                    <input class="input-large" type="text" data-bind="value: settings.settings.plugins.OctoText.carrier_address" required placeholder="gateway.com">
-                    <span class="help-block">{% trans %}
-                            Enter the phone number of the recipient of the text (usually your mobile phone) OR If you are sending an email, Enter
-                            the <b>user name</b> (ie Octotext of Octotext@outlook.com). The second field is the host gateway address that carriers use to
-                            route messages to their SMS service OR a destination email host name. A gateway example would be vtext.com for Verizon.
-                            Please see the link at the top of the page for more information on how to find this address for your provider. If you are
-                            sending an email, put the host name here (ie outlook.com)
-                        {% endtrans %}
-                    </span>
-                </form>
-            </div>
-        </div>
-
-        <div class="control-group">
-            <label class="control-label">{{ _('CC field - add additional email addresses here:') }}</label>
-            <div class="controls">
-                <form class="form-inline">
-                    <textarea class="form-control" rows="3" data-bind="value: settings.settings.plugins.OctoText.cc_field" required placeholder="emusk@tesla.com, mtwain@books.com"></textarea>
-                    <span class="help-block">{% trans %}
-                            If you would like to add other destinations for your notifications, enter them here in a comma separated format. Otherwise leave
-                            this field blank.
-                        {% endtrans %}
-                    </span>
-                </form>
-            </div>
-        </div>
-
+        <legend>{{ _('Test it!') }}</legend>
         <label class="checkbox">
             <input type="checkbox" value="Progress notifications" data-bind="checked: settings.settings.plugins.OctoText.show_navbar_button">
             Enable the test icon (an envelope) on the top of the navigation bar.
