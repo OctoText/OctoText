@@ -363,6 +363,15 @@ class OctoTextPlugin(
 
         # setup email message with all collected data
         email_message = EmailMessage()
+
+        cc_set = self._settings.get(["cc_field"])
+        if cc_set is not None:
+            cc_set = cc_set.replace("\n", "")
+            cc_set = cc_set.replace(" ", "")
+            cc_set = cc_set.split(",")
+            self._logger.debug(f"Cc: settings - {cc_set}")
+            email_message["Cc"] = cc_set
+
         email_message["Subject"] = appearance_name + ": " + title
         email_message["From"] = fromAddr  # 'OctoText@outlook.com'
         email_message["To"] = email_addr
