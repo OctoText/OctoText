@@ -456,9 +456,10 @@ class OctoTextPlugin(
             return error
 
         try:
-            SMTP_server.sendmail(
-                email_message["From"], email_message["To"], email_message.as_string()
-            )
+            SMTP_server.send_message(email_message)
+            # SMTP_server.sendmail(
+            #     email_message["From"], email_message["To"], email_message.as_string()
+            # )
             SMTP_server.quit()
         except Exception as e:
             self._logger.exception(
