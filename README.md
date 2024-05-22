@@ -1,3 +1,7 @@
+# No longer actively being supported!
+I no longer have the time to support Octotex. If a developer is interested in taking this task over please contact me. 
+Apologies to the people that use this extension and are hoping for updates.
+
 # OctoText - Simple, Easy to use, Free text or email notifications
 
 OctoText will notify you via text (or email) on common printer events. The current list of events are:
