@@ -127,6 +127,8 @@ class OctoTextPlugin(
             "en_printfail": False,
             "en_printpaused": True,
             "en_printresumed": False,
+            "subject_prefix": "",
+            "include_appearance_prefix": True,
             "show_navbar_button": True,
             "show_fail_cancel": False,
             "mmu_timeout": 0,
@@ -343,8 +345,11 @@ class OctoTextPlugin(
                     delete_image_after_sent = True
             pass
 
-        appearance_name = self.get_printer_name()
-        self._logger.debug(f"Appearance name (subject): {appearance_name}")
+        appearance_name_prefix = ""
+        if self._settings.get(["include_appearance_prefix"]):
+            appearance_name = self.get_printer_name()
+            appearance_name_prefix = appearance_name + ": "
+            self._logger.debug(f"Appearance name (subject): {appearance_name}")
 
         if body is None:
             body = ""
@@ -372,7 +377,7 @@ class OctoTextPlugin(
             self._logger.debug(f"Cc: settings - {cc_set}")
             email_message["Cc"] = cc_set
 
-        email_message["Subject"] = appearance_name + ": " + title
+        email_message["Subject"] = (self._settings.get(["subject_prefix"]) or "") + appearance_name_prefix + title
         email_message["From"] = fromAddr  # 'OctoText@outlook.com'
         email_message["To"] = email_addr
         email_message["Date"] = formatdate(localtime=True)
