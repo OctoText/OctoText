@@ -184,6 +184,21 @@
         </div>
 
         <div class="control-group">
+            <label class="control-label">{{ _('From address') }}</label>
+            <div class="controls">
+                <form class="form-inline">
+                    <input class="input-xlarge" type="text" data-bind="value: settings.settings.plugins.OctoText.from_address">
+                    <span class="help-block">{% trans %}
+                            Optional: Enter the from name and email address using format:<br />
+                            User Name &lt;name@gateway.com&gt;<br />
+                            Leave blank to use username and host.
+                        {% endtrans %}
+                    </span>
+                </form>
+            </div>
+        </div>
+
+        <div class="control-group">
             <label class="control-label">{{ _('Phone number OR user name @ Gateway OR Email address') }}</label>
             <div class="controls">
                 <form class="form-inline">

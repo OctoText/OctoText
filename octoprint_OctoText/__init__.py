@@ -108,6 +108,7 @@ class OctoTextPlugin(
             "smtp_name": "smtp.office365.com",
             "smtp_alert": "*ALERT from your PRINTER*",
             "smtp_message": "Your printer is creating something wonderful!",
+            "from_address": "",
             "username": "YourEmail",
             "servername": "outlook.com",
             "server_login": "YourEmail@outlook.com",  # obsoleted
@@ -349,9 +350,12 @@ class OctoTextPlugin(
         if body is None:
             body = ""
 
-        fromAddr = (
-            self._settings.get(["username"]) + "@" + self._settings.get(["servername"])
-        )
+        fromAddr = self._settings.get(["from_address"])
+        if fromAddr is None or len(fromAddr) == 0:
+            fromAddr = (
+                self._settings.get(["username"]) + "@" + self._settings.get(["servername"])
+            )
+
         # Send text message through SMS gateway of destination number/address
         validate = self._settings.get(["validate_username"])
         if validate:
