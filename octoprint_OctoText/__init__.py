@@ -931,7 +931,7 @@ class OctoTextPlugin(
                 "displayName": "OctoText",
                 "displayVersion": self._plugin_version,
                 "type": "github_release",
-                "user": "berrystephenw",
+                "user": "OctoText",
                 "repo": "Octotext",
                 "current": self._plugin_version,
                 "stable_branch": {
@@ -946,7 +946,7 @@ class OctoTextPlugin(
                         "comittish": ["rc", "main"],
                     }
                 ],
-                "pip": "https://github.com/berrystephenw/OctoText/archive/{target_version}.zip",
+                "pip": "https://github.com/OctoText/OctoText/archive/{target_version}.zip",
             }
         }
 

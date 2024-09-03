@@ -20,13 +20,13 @@ plugin_version = "0.3.3.1"
 plugin_description = """Send text/email messages on common printer events"""
 
 # The plugin's author. Can be overwritten within OctoPrint's internal data via __plugin_author__ in the plugin module
-plugin_author = "Stephen Berry"
+plugin_author = "Douglas Krahmer (original: Stephen Berry)"
 
 # The plugin's author's mail address.
-plugin_author_email = "sberry@gravity-performance.com"
+plugin_author_email = "doug.octotext@remhark.com"
 
 # The plugin's homepage URL. Can be overwritten within OctoPrint's internal data via __plugin_url__ in the plugin module
-plugin_url = "https://github.com/berrystephenw/OctoText"
+plugin_url = "https://github.com/OctoText/OctoText"
 
 # The plugin's license. Can be overwritten within OctoPrint's internal data via __plugin_license__ in the plugin module
 plugin_license = "AGPLv3"

@@ -1,7 +1,3 @@
-# No longer actively being supported!
-I no longer have the time to support Octotex. If a developer is interested in taking this task over please contact me. 
-Apologies to the people that use this extension and are hoping for updates.
-
 # OctoText - Simple, Easy to use, Free text or email notifications
 
 OctoText will notify you via text (or email) on common printer events. The current list of events are:
@@ -46,7 +42,7 @@ a friendly image telling you your webcam is down.
 Install via the bundled [Plugin Manager](https://docs.octoprint.org/en/master/bundledplugins/pluginmanager.html)
 or manually using this URL:
 
-    https://github.com/berrystephenw/OctoText/archive/refs/heads/main.zip
+    https://github.com/OctoText/OctoText/archive/refs/heads/main.zip
 
 The plugin <b><i>requires a Python 3 installation in OctoPrint. </i></b>
 If you have an older OctoPrint install and would like to upgrade (after checking to be sure your other plugins are Python 3 compatible) then you can do that by following the instructions here: https://community.octoprint.org/t/upgrade-your-octoprint-install-to-python-3/23973
@@ -92,7 +88,7 @@ also doubles as a test message to check your settings. Just press it once and wa
 
 # Problems?
 If you are having trouble with your setup you can post on the discussion board, and I'll get to your question as soon as I can.
-Please include a copy of the octoprint log from the logging menu of octoprint after enabling the DEBUG log level. https://github.com/berrystephenw/OctoText/discussions
+Please include a copy of the octoprint log from the logging menu of octoprint after enabling the DEBUG log level. https://github.com/OctoText/OctoText/discussions
 # Credits
 - Gina Häußge https://github.com/foosel for creating Octoprint and the plugin Pushbullet from which some of this plugin is developed from.
 - jneilliii https://github.com/jneilliii for helping me get past some sticky problems in development
