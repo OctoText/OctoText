@@ -113,6 +113,7 @@ class OctoTextPlugin(
             "server_login": "YourEmail@outlook.com",  # obsoleted
             "validate_username": False,
             "server_pass": "not a valid password",
+            "from_address": "",
             "phone_numb": "8675309",
             "carrier_address": "mypixmessages.com",
             "push_message": None,
@@ -349,13 +350,12 @@ class OctoTextPlugin(
         if body is None:
             body = ""
 
-        fromAddr = (
-            self._settings.get(["username"]) + "@" + self._settings.get(["servername"])
-        )
-        # Send text message through SMS gateway of destination number/address
-        validate = self._settings.get(["validate_username"])
-        if validate:
+        if self._settings.get(["from_address"]):
+            fromAddr = self._settings.get(["from_address"])
+        elif self._settings.get(["validate_username"]):
             fromAddr = self._settings.get(["username"])
+        else:
+            fromAddr = self._settings.get(["username"]) + "@" + self._settings.get(["servername"])
 
         phone_numb = self._settings.get(["phone_numb"])
         carrier_addr = self._settings.get(["carrier_address"])

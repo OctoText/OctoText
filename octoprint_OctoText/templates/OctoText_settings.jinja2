@@ -184,6 +184,17 @@
         </div>
 
         <div class="control-group">
+            <label class="control-label">{{ _('FROM address') }}</label>
+            <div class="controls">
+                <input class="input-large" type="text" data-bind="value: settings.settings.plugins.OctoText.from_address" required>
+                <span class="help-block">{% trans %}
+                        (Optional) Override the SMTP "FROM" address field.  If left blank, the FROM will default to the "Username and host address" value above.
+                    {% endtrans %}
+                </span>
+            </div>
+        </div>
+
+        <div class="control-group">
             <label class="control-label">{{ _('Phone number OR user name @ Gateway OR Email address') }}</label>
             <div class="controls">
                 <form class="form-inline">
