@@ -1,7 +1,13 @@
 # -*- coding: utf-8 -*-
-# OctoText
-# author: Stephen W. Berry
-# with contributions by others.
+# This is the working branch - changes to this version include:
+# Redoing how notifications are sent.
+#
+# The current plan is to implement a thread-queue method
+#  New notifications will be put on a queue, which feeds a thread that is running
+#  consuming FIFO events to be sent
+#  The reason to do it this way is to allow for retries when the network goes away
+#  Network (internet interruptions) happen frequently on Starlink, so this should be
+#  easy to test.
 #
 import datetime
 import os
@@ -107,6 +113,7 @@ class OctoTextPlugin(
             "server_login": "YourEmail@outlook.com",  # obsoleted
             "validate_username": False,
             "server_pass": "not a valid password",
+            "from_address": "",
             "phone_numb": "8675309",
             "carrier_address": "mypixmessages.com",
             "push_message": None,
@@ -345,13 +352,12 @@ class OctoTextPlugin(
         if body is None:
             body = ""
 
-        fromAddr = (
-            self._settings.get(["username"]) + "@" + self._settings.get(["servername"])
-        )
-        # Send text message through SMS gateway of destination number/address
-        validate = self._settings.get(["validate_username"])
-        if validate:
+        if self._settings.get(["from_address"]):
+            fromAddr = self._settings.get(["from_address"])
+        elif self._settings.get(["validate_username"]):
             fromAddr = self._settings.get(["username"])
+        else:
+            fromAddr = self._settings.get(["username"]) + "@" + self._settings.get(["servername"])
 
         phone_numb = self._settings.get(["phone_numb"])
         carrier_addr = self._settings.get(["carrier_address"])
