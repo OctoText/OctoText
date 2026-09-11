@@ -12,7 +12,9 @@ authors = [
     { name = "Douglas Krahmer (original: Stephen Berry)", email = "doug.octotext@remhark.com" },
 ]
 requires-python = ">=3.7,<4"
-dependencies = []
+dependencies = [
+    "Pillow",
+]
 dynamic = [
     "license",
 ]

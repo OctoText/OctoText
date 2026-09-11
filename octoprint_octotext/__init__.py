@@ -21,7 +21,6 @@ from threading import Thread
 import flask
 import octoprint.events
 import octoprint.plugin
-import sarge
 from flask_login import current_user
 
 # a few globals to save time checking for the existence of plugins
@@ -325,11 +324,10 @@ class OctoTextPlugin(
             image_path = ""
             pass
         else:
-            snapshot_url = self._settings.global_get(["webcam", "snapshot"])
-            self._logger.debug("Snapshot URL is: %s", snapshot_url)
-            if snapshot_url and send_image:
-                # email = self._create_email_with_snapshotimage()
-                image_path_dict = self._create_image_path_from_snapshot()
+            image_path_dict = (
+                self._create_image_path_from_snapshot() if send_image else None
+            )
+            if image_path_dict:
                 image_path = image_path_dict["path"]
                 result = image_path_dict["result"]
                 if result == "DELETE_IMAGE_AFTER_SENT":
@@ -398,29 +396,62 @@ class OctoTextPlugin(
             self.notifyQ.put(email_message)
         return result
 
+    def _get_snapshot_source(self):
+        try:
+            from octoprint.webcams import get_snapshot_webcam
+        except ImportError:  # OctoPrint < 1.9.0
+            snapshot_url = self._settings.global_get(["webcam", "snapshot"])
+            if not snapshot_url:
+                return None
+
+            def take_snapshot():
+                from requests import get
+
+                response = get(snapshot_url, verify=False, stream=True, timeout=5)
+                response.raise_for_status()
+                return response.iter_content(chunk_size=1024)
+
+            return (
+                take_snapshot,
+                self._settings.global_get_boolean(["webcam", "flipH"]),
+                self._settings.global_get_boolean(["webcam", "flipV"]),
+                self._settings.global_get_boolean(["webcam", "rotate90"]),
+            )
+
+        webcam = get_snapshot_webcam()
+        if webcam is None or not webcam.config.canSnapshot:
+            return None
+
+        return (
+            lambda: webcam.providerPlugin.take_webcam_snapshot(webcam.config.name),
+            webcam.config.flipH,
+            webcam.config.flipV,
+            webcam.config.rotate90,
+        )
+
     # load the snapshot image from camera, rotate and store the image into the filesystem. return the image path
     # location return dict( path:thePath, result:"SNAP")
     def _create_image_path_from_snapshot(self):
+        snapshot_source = self._get_snapshot_source()
+        if snapshot_source is None:
+            return None
+
+        take_snapshot, hflip, vflip, rotate = snapshot_source
+
         try:
 
             # reading webcam snapshot image
             import tempfile
 
-            from requests import get
-
-            tempFile = tempfile.NamedTemporaryFile(delete=False)
-            snapshot_url = self._settings.global_get(["webcam", "snapshot"])
-
-            response = get(snapshot_url, verify=False, timeout=5)  # adding timeout on url
-            response.raise_for_status()
-            tempFile.write(response.content)
+            tempFile = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
+            for chunk in take_snapshot():
+                tempFile.write(chunk)
             tempFile.close()
-            # ffmpeg can't guess file type it seems
-            os.rename(tempFile.name, tempFile.name + ".jpg")
-            tempFile.name += ".jpg"
 
             self._logger.debug("Webcam tempfile %s", tempFile.name)
-            self._process_snapshot(tempFile.name)
+
+            # flip or rotate as needed
+            self._process_snapshot(tempFile.name, hflip, vflip, rotate)
 
             return {"path": tempFile.name, "result": "DELETE_IMAGE_AFTER_SENT"}
         except Exception as e:
@@ -428,7 +459,6 @@ class OctoTextPlugin(
             # send message without webcam snapshot (enabled but not available)
             path = self._basefolder + "/static/img/offline.jpg"
             return {"path": path, "result": "SNAP"}
-        pass
 
     # Send the email to the smtp-server
     def _send_email_message(self, email_message):
@@ -451,50 +481,30 @@ class OctoTextPlugin(
             return "SENDM_E"
         return True
 
-    # this code will rotate or flip the image based on the webcam settings. borrowed from foosel
-    def _process_snapshot(self, snapshot_path, pixfmt="yuv420p"):
-        hflip = self._settings.global_get_boolean(["webcam", "flipH"])
-        vflip = self._settings.global_get_boolean(["webcam", "flipV"])
-        rotate = self._settings.global_get_boolean(["webcam", "rotate90"])
-        ffmpeg = self._settings.global_get(["webcam", "ffmpeg"])
-
-        if (
-            not ffmpeg
-            or not os.access(ffmpeg, os.X_OK)
-            or (not vflip and not hflip and not rotate)
-        ):
+    # this code will rotate or flip the image based on the webcam settings
+    def _process_snapshot(self, snapshot_path, hflip, vflip, rotate):
+        if not hflip and not vflip and not rotate:
             return
 
-        ffmpeg_command = [ffmpeg, "-y", "-i", snapshot_path]
-
-        rotate_params = [f"format={pixfmt}"]  # workaround for foosel/OctoPrint#1317
-        if rotate:
-            rotate_params.append("transpose=2")  # 90 degrees counter clockwise
-        if hflip:
-            rotate_params.append("hflip")  # horizontal flip
-        if vflip:
-            rotate_params.append("vflip")  # vertical flip
-
-        ffmpeg_command += [
-            "-vf",
-            sarge.shell_quote(",".join(rotate_params)),
-            snapshot_path,
-        ]
-        self._logger.debug("Running: %s", " ".join(ffmpeg_command))
         try:
-            p = sarge.run(ffmpeg_command)
-        except Exception as e:
-            self._logger.debug("Exception running ffmpeg %s", e)
-            return
+            from PIL import Image, ImageOps
 
-        if p.returncode == 0:
-            self._logger.debug("Rotated/flipped image with ffmpeg")
-        else:
-            self._logger.warning(
-                "Failed to rotate/flip image with ffmpeg, got return code %s: %s, %s",
-                p.returncode,
-                p.stdout.text,
-                p.stderr.text,
+            with Image.open(snapshot_path) as image:
+                processed = image
+                if hflip:
+                    processed = ImageOps.mirror(processed)
+                if vflip:
+                    processed = ImageOps.flip(processed)
+                if rotate:
+                    processed = processed.rotate(90, expand=True)
+
+                if processed.mode not in ("L", "RGB"):
+                    processed = processed.convert("RGB")
+
+                processed.save(snapshot_path)
+        except Exception:
+            self._logger.exception(
+                "Could not rotate/flip the snapshot, sending it unprocessed"
             )
 
     def get_api_commands(self):
