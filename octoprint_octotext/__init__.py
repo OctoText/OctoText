@@ -512,6 +512,9 @@ class OctoTextPlugin(
                 "Could not rotate/flip the snapshot, sending it unprocessed"
             )
 
+    def is_api_protected(self):
+        return True
+
     def get_api_commands(self):
         return {
             "test": [],
