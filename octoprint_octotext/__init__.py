@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This is the working branch - changes to this version include:
 # Redoing how notifications are sent.
 #
@@ -12,6 +11,7 @@
 import datetime
 import os
 import smtplib
+import tempfile
 import threading
 import time
 from email.message import EmailMessage
@@ -22,8 +22,14 @@ from threading import Thread
 import flask
 import octoprint.events
 import octoprint.plugin
-import sarge
+import requests
 from flask_login import current_user
+from PIL import Image, ImageOps
+
+try:
+    from octoprint.webcams import get_snapshot_webcam
+except ImportError:  # OctoPrint < 1.9.0
+    get_snapshot_webcam = None
 
 # a few globals to save time checking for the existence of plugins
 
@@ -62,7 +68,7 @@ class OctoTextPlugin(
             email_message = self.notifyQ.get()
             # do the work
             # self._logger.debug(f"processing email  {email_message}")
-            self._logger.debug(f"processing email  {email_message['Subject']}")
+            self._logger.debug("processing email  %s", email_message["Subject"])
             result = False
             retries = 0
             first_time = datetime.datetime.now()
@@ -82,7 +88,7 @@ class OctoTextPlugin(
                     break
                 if result in ["SMTP_E", "LOGIN_E", "SENDM_E"]:
 
-                    self._logger.debug(f"Retrying notification, error {result}")
+                    self._logger.debug("Retrying notification, error %s", result)
                     time.sleep(30)
                     result = False
                 else:
@@ -93,9 +99,11 @@ class OctoTextPlugin(
                 elapsed_time.seconds > 29
             ):  # >= time.sleep(30) says we had at least one delayed notice
                 self._logger.debug(
-                    f"Retries sending message: {retries}. Time message delayed: {elapsed_time}"
+                    "Retries sending message: %s. Time message delayed: %s",
+                    retries,
+                    elapsed_time,
                 )
-            self._logger.debug(f"Send Message result: {result}")
+            self._logger.debug("Send Message result: %s", result)
             self.notifyQ.task_done()
             time.sleep(60)  # make this adjustable?
         pass
@@ -182,6 +190,9 @@ class OctoTextPlugin(
             {"type": "settings", "name": "OctoText", "custom_bindings": True},
         ]
 
+    def is_template_autoescaped(self):
+        return True
+
     # access restrictions for sensitive data
     def on_settings_load(self):
         data = octoprint.plugin.SettingsPlugin.on_settings_load(self)
@@ -257,14 +268,10 @@ class OctoTextPlugin(
             else:
                 SMTP_server = smtplib.SMTP(name, port, timeout=5)
                 error = SMTP_server.starttls()
-                self._logger.debug(f"startttls() {error}")
-            self._logger.debug(f"SMTP_server {SMTP_server}")
+                self._logger.debug("startttls() %s", error)
+            self._logger.debug("SMTP_server %s", SMTP_server)
         except Exception as e:
-            self._logger.exception(
-                "Exception while talking to your mail server {message}".format(
-                    message=str(e)
-                )
-            )
+            self._logger.exception("Exception while talking to your mail server %s", e)
             return ["SMTP_E", None]
 
         # login to the mail account
@@ -276,11 +283,7 @@ class OctoTextPlugin(
             try:
                 SMTP_server.login(login, passw)
             except Exception as e:
-                self._logger.exception(
-                    "Exception while logging into mail server {message}".format(
-                        message=str(e)
-                    )
-                )
+                self._logger.exception("Exception while logging into mail server %s", e)
                 SMTP_server.quit()
                 return ["LOGIN_E", None]
         else:
@@ -288,7 +291,7 @@ class OctoTextPlugin(
                 "Password not supplied, proceeding without SMTP authentication."
             )
 
-        email_addr = phone_numb + "@%s" % carrier_addr
+        email_addr = f"{phone_numb}@{carrier_addr}"
         return [None, email_addr]
 
     def _prepare_email_message_and_send(
@@ -312,9 +315,9 @@ class OctoTextPlugin(
         SENDM_E - error sending email from server
         True - no error
         """
-        self._logger.debug(f"Preparing EMail '{title}' and adding to Notification-Queue")
+        self._logger.debug("Preparing EMail '%s' and adding to Notification-Queue", title)
         self._logger.debug(
-            "Enable webcam setting {}".format(self._settings.get(["en_webcam"]))
+            "Enable webcam setting %s", self._settings.get(["en_webcam"])
         )
 
         result = True
@@ -332,11 +335,10 @@ class OctoTextPlugin(
             image_path = ""
             pass
         else:
-            snapshot_url = self._settings.global_get(["webcam", "snapshot"])
-            self._logger.debug(f"Snapshot URL is: {snapshot_url}")
-            if snapshot_url and send_image:
-                # email = self._create_email_with_snapshotimage()
-                image_path_dict = self._create_image_path_from_snapshot()
+            image_path_dict = (
+                self._create_image_path_from_snapshot() if send_image else None
+            )
+            if image_path_dict:
                 image_path = image_path_dict["path"]
                 result = image_path_dict["result"]
                 if result == "DELETE_IMAGE_AFTER_SENT":
@@ -344,7 +346,7 @@ class OctoTextPlugin(
             pass
 
         appearance_name = self.get_printer_name()
-        self._logger.debug(f"Appearance name (subject): {appearance_name}")
+        self._logger.debug("Appearance name (subject): %s", appearance_name)
 
         if body is None:
             body = ""
@@ -359,7 +361,7 @@ class OctoTextPlugin(
 
         phone_numb = self._settings.get(["phone_numb"])
         carrier_addr = self._settings.get(["carrier_address"])
-        email_addr = phone_numb + "@%s" % carrier_addr
+        email_addr = f"{phone_numb}@{carrier_addr}"
 
         # setup email message with all collected data
         email_message = EmailMessage()
@@ -369,7 +371,7 @@ class OctoTextPlugin(
             cc_set = cc_set.replace("\n", "")
             cc_set = cc_set.replace(" ", "")
             cc_set = cc_set.split(",")
-            self._logger.debug(f"Cc: settings - {cc_set}")
+            self._logger.debug("Cc: settings - %s", cc_set)
             email_message["Cc"] = cc_set
 
         email_message["Subject"] = appearance_name + ": " + title
@@ -389,19 +391,13 @@ class OctoTextPlugin(
                 )
                 fp.close()
             except Exception as e:
-                self._logger.exception(
-                    "Exception while opening file for snapshot, {message}".format(
-                        message=str(e)
-                    )
-                )
+                self._logger.exception("Exception while opening file for snapshot, %s", e)
             if delete_image_after_sent:
                 try:
                     os.remove(image_path)
                 except Exception as e:
                     self._logger.exception(
-                        "Could not remove temporary snapshot file {} e:{}".format(
-                            image_path, str(e)
-                        )
+                        "Could not remove temporary snapshot file %s e:%s", image_path, e
                     )
                     # just logging, sending without image attached: return "FILE_E"
 
@@ -411,48 +407,72 @@ class OctoTextPlugin(
             self.notifyQ.put(email_message)
         return result
 
+    def _get_snapshot_source(self):
+        if get_snapshot_webcam is None:  # OctoPrint < 1.9.0
+            snapshot_url = self._settings.global_get(["webcam", "snapshot"])
+            if not snapshot_url:
+                return None
+
+            def take_snapshot():
+                response = requests.get(
+                    snapshot_url, verify=False, stream=True, timeout=5
+                )
+                response.raise_for_status()
+                return response.iter_content(chunk_size=1024)
+
+            return (
+                take_snapshot,
+                self._settings.global_get_boolean(["webcam", "flipH"]),
+                self._settings.global_get_boolean(["webcam", "flipV"]),
+                self._settings.global_get_boolean(["webcam", "rotate90"]),
+            )
+
+        webcam = get_snapshot_webcam()
+        if webcam is None or not webcam.config.canSnapshot:
+            return None
+
+        return (
+            lambda: webcam.providerPlugin.take_webcam_snapshot(webcam.config.name),
+            webcam.config.flipH,
+            webcam.config.flipV,
+            webcam.config.rotate90,
+        )
+
     # load the snapshot image from camera, rotate and store the image into the filesystem. return the image path
     # location return dict( path:thePath, result:"SNAP")
     def _create_image_path_from_snapshot(self):
+        snapshot_source = self._get_snapshot_source()
+        if snapshot_source is None:
+            return None
+
+        take_snapshot, hflip, vflip, rotate = snapshot_source
+
         try:
 
             # reading webcam snapshot image
-            import tempfile
-
-            from requests import get
-
-            tempFile = tempfile.NamedTemporaryFile(delete=False)
-            snapshot_url = self._settings.global_get(["webcam", "snapshot"])
-
-            response = get(snapshot_url, verify=False, timeout=5)  # adding timeout on url
-            response.raise_for_status()
-            tempFile.write(response.content)
+            tempFile = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
+            for chunk in take_snapshot():
+                tempFile.write(chunk)
             tempFile.close()
-            # ffmpeg can't guess file type it seems
-            os.rename(tempFile.name, tempFile.name + ".jpg")
-            tempFile.name += ".jpg"
 
-            self._logger.debug(f"Webcam tempfile {tempFile.name}")
-            self._process_snapshot(tempFile.name)
+            self._logger.debug("Webcam tempfile %s", tempFile.name)
+
+            # flip or rotate as needed
+            self._process_snapshot(tempFile.name, hflip, vflip, rotate)
 
             return {"path": tempFile.name, "result": "DELETE_IMAGE_AFTER_SENT"}
         except Exception as e:
-            self._logger.exception(
-                "Exception while fetching snapshot from webcam: {message}".format(
-                    message=str(e)
-                )
-            )
+            self._logger.exception("Exception while fetching snapshot from webcam: %s", e)
             # send message without webcam snapshot (enabled but not available)
             path = self._basefolder + "/static/img/offline.jpg"
             return {"path": path, "result": "SNAP"}
-        pass
 
     # Send the email to the smtp-server
     def _send_email_message(self, email_message):
         # login to the SMTP account and mail server
         error, email_addr = self.smtp_login_server()
 
-        if not (error is None):
+        if error is not None:
             return error
 
         try:
@@ -463,74 +483,74 @@ class OctoTextPlugin(
             SMTP_server.quit()
         except Exception as e:
             self._logger.exception(
-                "Exception while logging into SMTP server(send_email_message) {message}".format(
-                    message=str(e)
-                )
+                "Exception while logging into SMTP server(send_email_message) %s", e
             )
             return "SENDM_E"
         return True
 
-    # this code will rotate or flip the image based on the webcam settings. borrowed from foosel
-    def _process_snapshot(self, snapshot_path, pixfmt="yuv420p"):
-        hflip = self._settings.global_get_boolean(["webcam", "flipH"])
-        vflip = self._settings.global_get_boolean(["webcam", "flipV"])
-        rotate = self._settings.global_get_boolean(["webcam", "rotate90"])
-        ffmpeg = self._settings.global_get(["webcam", "ffmpeg"])
-
-        if (
-            not ffmpeg
-            or not os.access(ffmpeg, os.X_OK)
-            or (not vflip and not hflip and not rotate)
-        ):
+    # this code will rotate or flip the image based on the webcam settings
+    def _process_snapshot(self, snapshot_path, hflip, vflip, rotate):
+        if not hflip and not vflip and not rotate:
             return
 
-        ffmpeg_command = [ffmpeg, "-y", "-i", snapshot_path]
-
-        rotate_params = [f"format={pixfmt}"]  # workaround for foosel/OctoPrint#1317
-        if rotate:
-            rotate_params.append("transpose=2")  # 90 degrees counter clockwise
-        if hflip:
-            rotate_params.append("hflip")  # horizontal flip
-        if vflip:
-            rotate_params.append("vflip")  # vertical flip
-
-        ffmpeg_command += [
-            "-vf",
-            sarge.shell_quote(",".join(rotate_params)),
-            snapshot_path,
-        ]
-        self._logger.debug("Running: {}".format(" ".join(ffmpeg_command)))
         try:
-            p = sarge.run(ffmpeg_command)
-        except Exception as e:
-            self._logger.debug(f"Exception running ffmpeg {e}")
-            return
+            with Image.open(snapshot_path) as image:
+                processed = image
+                if hflip:
+                    processed = ImageOps.mirror(processed)
+                if vflip:
+                    processed = ImageOps.flip(processed)
+                if rotate:
+                    processed = processed.rotate(90, expand=True)
 
-        if p.returncode == 0:
-            self._logger.debug("Rotated/flipped image with ffmpeg")
-        else:
-            self._logger.warn(
-                "Failed to rotate/flip image with ffmpeg, "
-                "got return code {}: {}, {}".format(
-                    p.returncode, p.stdout.text, p.stderr.text
-                )
+                if processed.mode not in ("L", "RGB"):
+                    processed = processed.convert("RGB")
+
+                processed.save(snapshot_path)
+        except Exception:
+            self._logger.exception(
+                "Could not rotate/flip the snapshot, sending it unprocessed"
             )
 
+    def is_api_protected(self):
+        return True
+
     def get_api_commands(self):
-        return {
-            "test": [],
-            "data": ["some_parameter"],
-        }  # dictionary of acceptable commands
+        return {"test": []}  # dictionary of acceptable commands
 
     # Called by OctoPrint upon a POST request to /api/plugin/<plugin identifier>.
     # command will contain one of the commands as specified via get_api_commands(),
     # data will contain the full request body parsed from JSON into a Python dictionary.
     #
-    # format of post request from plugin:
-    # r = requests.post('/api/plugin/OctoText', json={'param1': 'value1', 'param2': 'value2'})
+    # format of post request from the frontend:
+    # OctoPrint.simpleApiCommand("OctoText", "test", {});
     def on_api_command(self, command, data):
-        self._logger.debug(f"Got an API command: {command}, data: {data}")
-        return flask.jsonify(result="ok")
+        self._logger.debug("Got an API command: %s, data: %s", command, data)
+
+        if command == "test":
+            self._logger.debug("The test button was pressed...")
+
+            try:
+                self._logger.debug("Sending text with image")
+
+                result = self._prepare_email_message_and_send(
+                    "Test from the OctoText Plugin.",
+                    self._settings.get(["smtp_message"]),
+                    sender="OctoText",
+                    direct_send=True,
+                )
+            except Exception as e:
+                self._logger.exception("Exception while sending text, %s", e)
+                return flask.make_response(flask.jsonify(result=False, error="SMTP_E"))
+
+            self._logger.debug("String returned from send_message_with_webcam %s", result)
+            if result is not True:
+                error = result
+                result = False
+            else:
+                error = None
+
+            return flask.make_response(flask.jsonify(result=result, error=error))
 
     def receive_api_command(self, command, data, permissions=None):
         """
@@ -546,7 +566,7 @@ class OctoTextPlugin(
         if command != self._identifier:
             return
 
-        self._logger.debug(f"received a message command: {command}")
+        self._logger.debug("received a message command: %s", command)
 
         # TODO check the data before we put it on the queue
         # there is no way to notify the caller that there was an error so just log the
@@ -577,53 +597,17 @@ class OctoTextPlugin(
 
         return True
 
-    # called when the user presses the icon in the status bar for testing or the test button in the settings form
-    def on_api_get(self, request):
-
-        self._logger.debug("The test button was pressed...")
-        self._logger.debug(f"request = {request}")
-
-        try:
-            self._logger.debug("Sending text with image")
-
-            # title, body, sender=None, thumbnail=None, send_image=True, direct_send=True
-            result = self._prepare_email_message_and_send(
-                "Test from the OctoText Plugin.",
-                self._settings.get(["smtp_message"]),
-                sender="OctoText",
-                direct_send=True,
-            )
-            pass
-        except Exception as e:
-            self._logger.exception(
-                "Exception while sending text, {message}".format(message=str(e))
-            )
-            return flask.make_response(flask.jsonify(result=False, error="SMTP_E"))
-
-        # result = True
-        self._logger.debug(f"String returned from send_message_with_webcam {result}")
-        if not (result is True):
-            error = result
-            result = False
-        else:
-            error = None
-
-        return flask.make_response(flask.jsonify(result=result, error=error))
-
     # testing logging and proper startup of passed values in settings forms
     def on_after_startup(self):
 
         self._logger.info("--------------------------------------------")
-        self._logger.info(f"OctoText started: {self._plugin_version}")
+        self._logger.info("OctoText started: %s", self._plugin_version)
         self._logger.info(
-            "SMTP Name: {}, SMTP port: {}, SMTP message: {}, server login: {}".format(
-                self._settings.get(["smtp_name"]),
-                self._settings.get(["smtp_port"]),
-                self._settings.get(["smtp_message"]),
-                self._settings.get(["username"])
-                + "@"
-                + self._settings.get(["servername"]),
-            )
+            "SMTP Name: %s, SMTP port: %s, SMTP message: %s, server login: %s",
+            self._settings.get(["smtp_name"]),
+            self._settings.get(["smtp_port"]),
+            self._settings.get(["smtp_message"]),
+            self._settings.get(["username"]) + "@" + self._settings.get(["servername"]),
         )
         # on loading of plugin look for the existence of the prusa or cura thumbnail plugins
 
@@ -634,9 +618,9 @@ class OctoTextPlugin(
             "OctoText", "UltimakerFormatPackage"
         )
         if os.path.exists(self.prusa_folder):
-            self._logger.info(f"Prusa thumbnail loaded: {self.prusa_folder}")
+            self._logger.info("Prusa thumbnail loaded: %s", self.prusa_folder)
         if os.path.exists(self.cura_folder):
-            self._logger.info(f"Cura thumbnails loaded: {self.cura_folder}")
+            self._logger.info("Cura thumbnails loaded: %s", self.cura_folder)
         self._logger.info("--------------------------------------------")
         Thread(target=self.email_message_queue_worker, daemon=True).start()
 
@@ -659,7 +643,7 @@ class OctoTextPlugin(
             if how_long.seconds < mmutimeout:
                 return line
         if "echo:busy: paused for user" in line:
-            self._logger.info(f"State ID: {self._printer.get_state_id()}")
+            self._logger.info("State ID: %s", self._printer.get_state_id())
             if self._printer.get_state_id() == "PRINTING":
                 self.last_fired = datetime.datetime.now()
                 payload = dict([("name", "printer"), ("user", "system")])
@@ -678,7 +662,7 @@ class OctoTextPlugin(
             thumb_filename = prusa_thumb_filename
         elif os.path.exists(cura_thumb_filename):
             thumb_filename = cura_thumb_filename
-        self._logger.debug(f"thumbnail filename path is: {thumb_filename}")
+        self._logger.debug("thumbnail filename path is: %s", thumb_filename)
         if thumb_filename is not None and os.path.exists(thumb_filename):
             self._logger.debug("thumbnail exists! using image in notifications")
         return thumb_filename
@@ -693,7 +677,7 @@ class OctoTextPlugin(
                 return
             progr = self._printer.get_current_data()["progress"]
             ptl = progr["printTimeLeft"]
-        self._logger.debug(f"progress: {ptl}")
+        self._logger.debug("progress: %s", ptl)
         while not stopme.is_set():
             progr = self._printer.get_current_data()["progress"]
             total_time = progr["printTime"] + progr["printTimeLeft"]
@@ -701,7 +685,7 @@ class OctoTextPlugin(
                 int(self._settings.get(["progress_interval"])) / 100 * int(total_time)
             )
             interval = int(interval)
-            self._logger.debug(f"interval: {interval}")
+            self._logger.debug("interval: %s", interval)
             time.sleep(interval)
 
             # send the message to the queue
@@ -712,7 +696,7 @@ class OctoTextPlugin(
                 return
             # progress = int((pt_current / ptl) * 100)
             time_left = datetime.timedelta(seconds=int(pt_current))
-            self._logger.debug(f"Print time left {time_left}")
+            self._logger.debug("Print time left %s", time_left)
             printer_name = self.get_printer_name()
             # title = "Print Progress " + str(progress) + " percent left."
             title = "Print Progress " + str(time_left) + " time to finish."
@@ -750,7 +734,7 @@ class OctoTextPlugin(
             file = payload["name"]
             target = payload["path"]
             path_to_thumbnail = self.find_thumbnail(file)
-            self._logger.debug(f"Upload event - thumbnail filename {path_to_thumbnail}")
+            self._logger.debug("Upload event - thumbnail filename %s", path_to_thumbnail)
             noteType = True
             title = "A file was uploaded "
             description = "{file} was uploaded {targetString}".format(
@@ -763,7 +747,7 @@ class OctoTextPlugin(
             if not self._settings.get(["en_printstart"]):
                 return
 
-            self._logger.debug(f"Print started event: {payload}")
+            self._logger.debug("Print started event: %s", payload)
             file = os.path.basename(payload["name"])
             origin = payload["origin"]
 
@@ -789,13 +773,11 @@ class OctoTextPlugin(
             file = os.path.basename(payload["name"])
             elapsed_time = datetime.timedelta(seconds=int(payload["time"]))
 
-            self._logger.debug(f"Event received: {event}, print done: {file}")
+            self._logger.debug("Event received: %s, print done: %s", event, file)
             noteType = True
             title = "Print job finished"
             description = (
-                "{file} \n\rfinished printing, elapsed time: {elapsed_time}.".format(
-                    file=file, elapsed_time=elapsed_time
-                )
+                f"{file} \n\rfinished printing, elapsed time: {elapsed_time}."
             )
             if self._settings.get(["en_progress_time"]):
                 self.manage_progress_thread(stop=True)
@@ -810,7 +792,7 @@ class OctoTextPlugin(
             noteType = True
             title = "Printer ERROR!"
             description = f" {error}"
-            self._logger.debug(f"Event received: {event}, print error: {error}")
+            self._logger.debug("Event received: %s, print error: %s", event, error)
             if self._settings.get(["en_progress_time"]):
                 self.manage_progress_thread(stop=True)
 
@@ -822,7 +804,7 @@ class OctoTextPlugin(
                 return
 
             settingf = self._settings.get(["en_printfail"])
-            self._logger.debug(f"Event received: {event}, print fail: {settingf}")
+            self._logger.debug("Event received: %s, print fail: %s", event, settingf)
             name = payload["name"]
             try:
                 user = payload["user"]
@@ -843,7 +825,7 @@ class OctoTextPlugin(
                 return
 
             settingf = self._settings.get(["en_printfail"])
-            self._logger.debug(f"Event received: {event}, print fail: {settingf}")
+            self._logger.debug("Event received: %s, print fail: %s", event, settingf)
             reason = payload["reason"]
             name = payload["name"]
             time = payload["time"]
@@ -881,9 +863,11 @@ class OctoTextPlugin(
             else:
                 description = f"file: {pay_name}"
             self._logger.debug(
-                "Print paused args notetype: {}, name:{}, title {}, description {}".format(
-                    noteType, pay_name, title, description
-                )
+                "Print paused args notetype: %s, name:%s, title %s, description %s",
+                noteType,
+                pay_name,
+                title,
+                description,
             )
 
         elif event == octoprint.events.Events.PRINT_RESUMED:
@@ -906,9 +890,11 @@ class OctoTextPlugin(
             title = "Resumed by " + user + " at " + time
             description = f"file: {pay_name}"
             self._logger.debug(
-                "Print resumed args notetype: {}, name:{}, title {}, description {}".format(
-                    noteType, pay_name, title, description
-                )
+                "Print resumed args notetype: %s, name:%s, title %s, description %s",
+                noteType,
+                pay_name,
+                title,
+                description,
             )
 
         if noteType is None:
@@ -953,7 +939,7 @@ class OctoTextPlugin(
 
 __plugin_name__ = "OctoText"
 
-__plugin_pythoncompat__ = ">=3,<4"  # only python 3+
+__plugin_pythoncompat__ = ">=3.7,<4"
 
 
 def __plugin_load__():
