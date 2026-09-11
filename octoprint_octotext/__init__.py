@@ -11,6 +11,7 @@
 import datetime
 import os
 import smtplib
+import tempfile
 import threading
 import time
 from email.message import EmailMessage
@@ -21,7 +22,14 @@ from threading import Thread
 import flask
 import octoprint.events
 import octoprint.plugin
+import requests
 from flask_login import current_user
+from PIL import Image, ImageOps
+
+try:
+    from octoprint.webcams import get_snapshot_webcam
+except ImportError:  # OctoPrint < 1.9.0
+    get_snapshot_webcam = None
 
 # a few globals to save time checking for the existence of plugins
 
@@ -397,17 +405,15 @@ class OctoTextPlugin(
         return result
 
     def _get_snapshot_source(self):
-        try:
-            from octoprint.webcams import get_snapshot_webcam
-        except ImportError:  # OctoPrint < 1.9.0
+        if get_snapshot_webcam is None:  # OctoPrint < 1.9.0
             snapshot_url = self._settings.global_get(["webcam", "snapshot"])
             if not snapshot_url:
                 return None
 
             def take_snapshot():
-                from requests import get
-
-                response = get(snapshot_url, verify=False, stream=True, timeout=5)
+                response = requests.get(
+                    snapshot_url, verify=False, stream=True, timeout=5
+                )
                 response.raise_for_status()
                 return response.iter_content(chunk_size=1024)
 
@@ -441,8 +447,6 @@ class OctoTextPlugin(
         try:
 
             # reading webcam snapshot image
-            import tempfile
-
             tempFile = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
             for chunk in take_snapshot():
                 tempFile.write(chunk)
@@ -487,8 +491,6 @@ class OctoTextPlugin(
             return
 
         try:
-            from PIL import Image, ImageOps
-
             with Image.open(snapshot_path) as image:
                 processed = image
                 if hflip:
