@@ -953,7 +953,7 @@ class OctoTextPlugin(
 
 __plugin_name__ = "OctoText"
 
-__plugin_pythoncompat__ = ">=3,<4"  # only python 3+
+__plugin_pythoncompat__ = ">=3.7,<4"
 
 
 def __plugin_load__():
