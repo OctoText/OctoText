@@ -516,20 +516,41 @@ class OctoTextPlugin(
         return True
 
     def get_api_commands(self):
-        return {
-            "test": [],
-            "data": ["some_parameter"],
-        }  # dictionary of acceptable commands
+        return {"test": []}  # dictionary of acceptable commands
 
     # Called by OctoPrint upon a POST request to /api/plugin/<plugin identifier>.
     # command will contain one of the commands as specified via get_api_commands(),
     # data will contain the full request body parsed from JSON into a Python dictionary.
     #
-    # format of post request from plugin:
-    # r = requests.post('/api/plugin/OctoText', json={'param1': 'value1', 'param2': 'value2'})
+    # format of post request from the frontend:
+    # OctoPrint.simpleApiCommand("OctoText", "test", {});
     def on_api_command(self, command, data):
         self._logger.debug("Got an API command: %s, data: %s", command, data)
-        return flask.jsonify(result="ok")
+
+        if command == "test":
+            self._logger.debug("The test button was pressed...")
+
+            try:
+                self._logger.debug("Sending text with image")
+
+                result = self._prepare_email_message_and_send(
+                    "Test from the OctoText Plugin.",
+                    self._settings.get(["smtp_message"]),
+                    sender="OctoText",
+                    direct_send=True,
+                )
+            except Exception as e:
+                self._logger.exception("Exception while sending text, %s", e)
+                return flask.make_response(flask.jsonify(result=False, error="SMTP_E"))
+
+            self._logger.debug("String returned from send_message_with_webcam %s", result)
+            if result is not True:
+                error = result
+                result = False
+            else:
+                error = None
+
+            return flask.make_response(flask.jsonify(result=result, error=error))
 
     def receive_api_command(self, command, data, permissions=None):
         """
@@ -575,37 +596,6 @@ class OctoTextPlugin(
         self.notifyQ.put(email_message)
 
         return True
-
-    # called when the user presses the icon in the status bar for testing or the test button in the settings form
-    def on_api_get(self, request):
-
-        self._logger.debug("The test button was pressed...")
-        self._logger.debug("request = %s", request)
-
-        try:
-            self._logger.debug("Sending text with image")
-
-            # title, body, sender=None, thumbnail=None, send_image=True, direct_send=True
-            result = self._prepare_email_message_and_send(
-                "Test from the OctoText Plugin.",
-                self._settings.get(["smtp_message"]),
-                sender="OctoText",
-                direct_send=True,
-            )
-            pass
-        except Exception as e:
-            self._logger.exception("Exception while sending text, %s", e)
-            return flask.make_response(flask.jsonify(result=False, error="SMTP_E"))
-
-        # result = True
-        self._logger.debug("String returned from send_message_with_webcam %s", result)
-        if result is not True:
-            error = result
-            result = False
-        else:
-            error = None
-
-        return flask.make_response(flask.jsonify(result=result, error=error))
 
     # testing logging and proper startup of passed values in settings forms
     def on_after_startup(self):

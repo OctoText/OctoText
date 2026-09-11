@@ -20,17 +20,8 @@ $(function() {
         
         self.sendTestMessage = function() {
             self.busy(true);
-            $.ajax({
-                url: API_BASEURL + "plugin/OctoText",
-                type: "GET",
-                dataType: "json",
-                data: JSON.stringify({
-                    command: "test",
-                    /* token: self.settings.settings.plugins.OctoText.access_token(), */
-                    channel: self.settings.settings.plugins.OctoText.push_message()
-                }),
-                contentType: "application/json; charset=UTF-8",
-                success: function(response) {
+            OctoPrint.simpleApiCommand("OctoText", "test", {})
+                .done(function(response) {
                     self.busy(false);
                     if (response.result) {
                         new PNotify({
@@ -63,11 +54,10 @@ $(function() {
                             type: notice_type
                         });
                     }
-                },
-                error: function() {
+                })
+                .fail(function() {
                     self.busy(false);
-                }
-            });
+                });
         };
         // assign the injected parameters, e.g.:
         // self.loginStateViewModel = parameters[0];
