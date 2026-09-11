@@ -190,6 +190,9 @@ class OctoTextPlugin(
             {"type": "settings", "name": "OctoText", "custom_bindings": True},
         ]
 
+    def is_template_autoescaped(self):
+        return True
+
     # access restrictions for sensitive data
     def on_settings_load(self):
         data = octoprint.plugin.SettingsPlugin.on_settings_load(self)
