@@ -441,13 +441,12 @@ class OctoTextPlugin(
     # load the snapshot image from camera, rotate and store the image into the filesystem. return the image path
     # location return dict( path:thePath, result:"SNAP")
     def _create_image_path_from_snapshot(self):
-        snapshot_source = self._get_snapshot_source()
-        if snapshot_source is None:
-            return None
-
-        take_snapshot, hflip, vflip, rotate = snapshot_source
-
         try:
+            snapshot_source = self._get_snapshot_source()
+            if snapshot_source is None:
+                return None
+
+            take_snapshot, hflip, vflip, rotate = snapshot_source
 
             # reading webcam snapshot image
             tempFile = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
