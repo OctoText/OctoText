@@ -158,6 +158,7 @@ class OctoTextPlugin(
     # ~~ PrintProgressPlugin
 
     current_path = ""
+    _last_progress_sent = None
 
     def on_print_progress(self, storage, path, progress):
 
@@ -166,6 +167,7 @@ class OctoTextPlugin(
             return
 
         if progress == 0:
+            self._last_progress_sent = None
             return
 
         if self._settings.get(["en_progress_time"]):
@@ -178,6 +180,9 @@ class OctoTextPlugin(
             return
         # occasionally we don't get 99% messages from progress intervals (might be on short prints)
         if progress % int(self._settings.get(["progress_interval"])) == 0:
+            if progress == self._last_progress_sent:
+                return
+            self._last_progress_sent = progress
             printer_name = self.get_printer_name()
             title = "Print Progress " + str(progress) + " percent finished."
             description = path
@@ -766,6 +771,7 @@ class OctoTextPlugin(
 
         elif event == octoprint.events.Events.PRINT_STARTED:
 
+            self._last_progress_sent = None
             if not self._settings.get(["en_printstart"]):
                 return
 
