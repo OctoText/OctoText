@@ -138,6 +138,7 @@ class OctoTextPlugin(
             "en_printend": True,
             "en_upload": True,
             "en_error": True,
+            "en_error_printing_only": False,
             "en_printfail": False,
             "en_printpaused": True,
             "en_printresumed": False,
@@ -159,6 +160,7 @@ class OctoTextPlugin(
 
     current_path = ""
     _last_progress_sent = None
+    _is_printing = False
 
     def on_print_progress(self, storage, path, progress):
 
@@ -797,6 +799,7 @@ class OctoTextPlugin(
 
         elif event == octoprint.events.Events.PRINT_STARTED:
 
+            self._is_printing = True
             self._last_progress_sent = None
             # Start time-based progress thread regardless of whether print-start email is enabled
             if self._settings.get(["en_progress"]) and self._settings.get(
@@ -820,6 +823,7 @@ class OctoTextPlugin(
 
         elif event == octoprint.events.Events.PRINT_DONE:
 
+            self._is_printing = False
             if self._settings.get(["en_progress_time"]):
                 self.manage_progress_thread(stop=True)
 
@@ -838,10 +842,23 @@ class OctoTextPlugin(
 
         elif event == octoprint.events.Events.ERROR:
 
+            was_printing = (
+                self._is_printing
+                or self._printer.is_printing()
+                or self._printer.is_paused()
+            )
+            self._is_printing = False
             if self._settings.get(["en_progress_time"]):
                 self.manage_progress_thread(stop=True)
 
             if not self._settings.get(["en_error"]):
+                return
+
+            if self._settings.get(["en_error_printing_only"]) and not was_printing:
+                self._logger.debug(
+                    "Ignoring printer error while not printing: %s",
+                    payload.get("error"),
+                )
                 return
 
             error = payload["error"]
@@ -853,6 +870,7 @@ class OctoTextPlugin(
 
         elif event == octoprint.events.Events.PRINT_CANCELLED:
 
+            self._is_printing = False
             if self._settings.get(["en_progress_time"]):
                 self.manage_progress_thread(stop=True)
 
@@ -875,6 +893,7 @@ class OctoTextPlugin(
 
         elif event == octoprint.events.Events.PRINT_FAILED:
 
+            self._is_printing = False
             if self._settings.get(["en_progress_time"]):
                 self.manage_progress_thread(stop=True)
 
