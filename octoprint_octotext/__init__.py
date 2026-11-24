@@ -188,7 +188,7 @@ class OctoTextPlugin(
                 return
             self._last_progress_sent = progress
             printer_name = self.get_printer_name()
-            title = "Print Progress " + str(progress) + " percent finished."
+            title = f"Print Progress {progress}% finished."
             description = path
             self._prepare_email_message_and_send(
                 title, description, printer_name, None, self._settings.get(["en_webcam"])
