@@ -25,6 +25,10 @@
             <input type="checkbox" value="Printer error" data-bind="checked: settings.settings.plugins.OctoText.en_error">
             Unrecoverable Error notification.
         </label>
+        <label class="checkbox" style="margin-left: 20px;" data-bind="visible: settings.settings.plugins.OctoText.en_error()">
+            <input type="checkbox" value="Printer error while printing only" data-bind="checked: settings.settings.plugins.OctoText.en_error_printing_only">
+            Only send error notifications while printing (suppresses offline alerts when printer is powered off).
+        </label>
         <label class="checkbox">
             <input type="checkbox" value="Print Failed/Print Canceled" data-bind="checked: settings.settings.plugins.OctoText.show_fail_cancel">
             Print Fail OR Cancel notification.

@@ -138,6 +138,7 @@ class OctoTextPlugin(
             "en_printend": True,
             "en_upload": True,
             "en_error": True,
+            "en_error_printing_only": False,
             "en_printfail": False,
             "en_printpaused": True,
             "en_printresumed": False,
@@ -829,6 +830,15 @@ class OctoTextPlugin(
                 self.manage_progress_thread(stop=True)
 
             if not self._settings.get(["en_error"]):
+                return
+
+            if self._settings.get(["en_error_printing_only"]) and not (
+                self._printer.is_printing() or self._printer.is_paused()
+            ):
+                self._logger.debug(
+                    "Ignoring printer error while not printing: %s",
+                    payload.get("error"),
+                )
                 return
 
             error = payload["error"]
