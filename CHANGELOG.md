@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.5.0](https://github.com/OctoText/OctoText/compare/0.4.0...0.5.0) (2026-11-24)
+
+
+### Features
+
+* add option to send printer error notifications only while printing ([#165](https://github.com/OctoText/OctoText/issues/165)) ([b3dee98](https://github.com/OctoText/OctoText/commit/b3dee98fd1851b53f8129e202ddac2e44dbdf62a))
+* clarify SMTP login username in debug logs and test error toast ([#164](https://github.com/OctoText/OctoText/issues/164)) ([311d61b](https://github.com/OctoText/OctoText/commit/311d61b8712cedfa7c688b6e19cbda7494765485))
+* support fixed time interval in minutes for progress notifications ([#166](https://github.com/OctoText/OctoText/issues/166)) ([cd4db0f](https://github.com/OctoText/OctoText/commit/cd4db0f1d7bd0d3fcd704c2840f7eaa6ebfad62f))
+
+
+### Bug Fixes
+
+* remove orphaned hidden Email address label in settings ([#170](https://github.com/OctoText/OctoText/issues/170)) ([c44ef5f](https://github.com/OctoText/OctoText/commit/c44ef5fbaffe4b6eedc94edebd10833bfb25e69d))
+
 ## [0.4.0](https://github.com/OctoText/OctoText/compare/0.4.1...0.4.0) (2026-11-24)
 
 
