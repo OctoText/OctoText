@@ -1,0 +1,58 @@
+name: PR Check
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - edited
+      - synchronize
+      - reopened
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  semantic-pr-title:
+    name: Conventional Commit PR Title
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  test:
+    name: Test (OctoPrint ${{ matrix.octoprint }} / Python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - octoprint: "2.0.1"
+            python: "3.12"
+            extra: ""
+          - octoprint: "1.10.3"
+            python: "3.11"
+            extra: "setuptools<81"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Set up Python ${{ matrix.python }}
+        run: uv python install ${{ matrix.python }}
+
+      - name: Create venv and install dependencies
+        run: |
+          uv venv --python ${{ matrix.python }} .venv
+          uv pip install --python .venv/bin/python "octoprint==${{ matrix.octoprint }}" pytest ${{ matrix.extra }}
+          uv pip install --python .venv/bin/python -e .
+
+      - name: Run pytest
+        run: .venv/bin/pytest -v local-test/test_octotext.py
+
+      - name: Verify package build
+        run: uv build
