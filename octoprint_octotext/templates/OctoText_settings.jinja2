@@ -144,18 +144,6 @@
             </div>
         </div>
 
-        <div class="control-group">
-            <label class="control-label">{{ _('Email address') }}</label>
-            <div class="controls">
-                <input class="input-large" type="text" data-bind="visible: false" data-bind="value: settings.settings.plugins.OctoText.server_login" required>
-                <span class="help-block">{% trans %}
-                        Enter your email address that you intend to use for OctoText. It is recommended that you set up an email account
-                        that is only used for this app.
-                    {% endtrans %}
-                </span>
-            </div>
-        </div>
-
         <label class="checkbox">
             <input type="checkbox" value="Validate SMTP with username only" data-bind="checked: settings.settings.plugins.OctoText.validate_username">
             Check to use username only authentication. Rarely used option for mail servers that require a username only SMTP login.
@@ -169,7 +157,7 @@
                     <span class="add-on">@</span>
                     <input class="input-large" type="text" data-bind="value: settings.settings.plugins.OctoText.servername" required placeholder="gateway.com">
                     <span class="help-block">{% trans %}
-                            Enter the username of the email account and server domain name (ie outlook.com).
+                            Sender email account (username and domain, e.g., myname @ gmail.com).
                         {% endtrans %}
                     </span>
                 </form>

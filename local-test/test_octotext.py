@@ -1,4 +1,4 @@
-﻿import http.server
+import http.server
 import io
 import os
 import socketserver
@@ -204,7 +204,11 @@ def test_on_api_command_test_success_and_errors():
 
         with patch.object(plugin, "_prepare_email_message_and_send", return_value="LOGIN_E"):
             resp = plugin.on_api_command("test", {})
-            assert resp.get_json() == {"result": False, "error": "LOGIN_E"}
+            assert resp.get_json() == {
+                "result": False,
+                "error": "LOGIN_E",
+                "login": "YourEmail@outlook.com",
+            }
 
         with patch.object(plugin, "_prepare_email_message_and_send", side_effect=RuntimeError("boom")):
             resp = plugin.on_api_command("test", {})
@@ -455,3 +459,24 @@ def test_error_sent_when_octoprint_transitions_to_offline_before_event():
             octoprint.events.Events.ERROR, {"error": "Offline after error"}
         )
         assert mock_send.call_count == 1
+def test_login_error_returns_attempted_login_username():
+    app = flask.Flask(__name__)
+    plugin = make_plugin(
+        settings_overrides={
+            "username": "alice",
+            "servername": "fastmail.com",
+            "validate_username": False,
+        }
+    )
+    with app.app_context():
+        with patch.object(plugin, "_prepare_email_message_and_send", return_value="LOGIN_E"):
+            resp = plugin.on_api_command("test", {})
+            assert resp.get_json() == {
+                "result": False,
+                "error": "LOGIN_E",
+                "login": "alice@fastmail.com",
+            }
+        with patch.object(plugin, "_prepare_email_message_and_send", return_value=True):
+            resp = plugin.on_api_command("test", {})
+            assert resp.get_json() == {"result": True, "error": None}
+

@@ -291,7 +291,7 @@ class OctoTextPlugin(
             return ["SMTP_E", None]
 
         # login to the mail account
-        self._logger.debug(login)
+        self._logger.debug("Attempting SMTP login as: %s", login)
         if (
             passw
         ):  # Only use SMTP auth if the password has been supplied, skip if blank - issue #91
@@ -299,7 +299,9 @@ class OctoTextPlugin(
             try:
                 SMTP_server.login(login, passw)
             except Exception as e:
-                self._logger.exception("Exception while logging into mail server %s", e)
+                self._logger.exception(
+                    "Exception while logging into mail server as '%s': %s", login, e
+                )
                 SMTP_server.quit()
                 return ["LOGIN_E", None]
         else:
@@ -589,7 +591,18 @@ class OctoTextPlugin(
             else:
                 error = None
 
-            return flask.make_response(flask.jsonify(result=result, error=error))
+            payload = {"result": result, "error": error}
+            if error == "LOGIN_E":
+                payload["login"] = (
+                    (self._settings.get(["username"]) or "")
+                    if self._settings.get(["validate_username"])
+                    else self._format_address(
+                        self._settings.get(["username"]),
+                        self._settings.get(["servername"]),
+                    )
+                )
+
+            return flask.make_response(flask.jsonify(**payload))
 
     def receive_api_command(self, command, data, permissions=None):
         """
