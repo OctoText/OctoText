@@ -97,7 +97,7 @@ compatibility:
   # is EOL), leave at ">=2.7,<3" - be aware that your plugin will not be allowed to register on the
   # plugin repository if it only support Python 2.
 
-  python: ">=3,<4"
+  python: ">=3.7,<4"
 
 ---
 # OctoText - Simple, Easy to use, Free text or email notifications 
