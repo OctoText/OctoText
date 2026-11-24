@@ -1,4 +1,4 @@
-import http.server
+﻿import http.server
 import io
 import os
 import socketserver
@@ -297,3 +297,24 @@ def test_gmail_app_password_strips_spaces_only_for_gmail():
         err, _ = other_plugin.smtp_login_server()
     assert err is None
     mock_smtp_other.login.assert_called_once_with("user@outlook.com", "pass with spaces")
+def test_duplicate_progress_emails_deduplicated():
+    plugin = make_plugin(
+        settings_overrides={
+            "en_progress": True,
+            "en_progress_time": False,
+            "progress_interval": 25,
+        }
+    )
+    with patch.object(plugin, "_prepare_email_message_and_send") as mock_send:
+        for _ in range(4):
+            plugin.on_print_progress("local", "benchy.gcode", 25)
+        assert mock_send.call_count == 1
+
+        plugin.on_print_progress("local", "benchy.gcode", 50)
+        assert mock_send.call_count == 2
+
+        # New print resets last progress sent
+        plugin.on_print_progress("local", "benchy.gcode", 0)
+        plugin.on_print_progress("local", "benchy.gcode", 25)
+        assert mock_send.call_count == 3
+
