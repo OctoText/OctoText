@@ -450,3 +450,8 @@ def test_fixed_time_progress_interval():
             assert waits[0] == 45 * 60
             assert mock_send.call_count == 1
             assert "1:00:00" in mock_send.call_args[0][0]
+
+
+def test_notification_throttle_default_and_configurable():
+    plugin = make_plugin()
+    assert plugin.get_settings_defaults()["notification_throttle"] == 60

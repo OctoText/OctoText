@@ -93,6 +93,17 @@
             </div>
         </div>
 
+        <div class="control-group">
+        <label class="control-label">{{ _('Notification throttle (seconds)') }}</label>
+            <div class="controls">
+                <input class="input-mini" type="number" min="0" max="3600" data-bind="value: settings.settings.plugins.OctoText.notification_throttle" required>
+                <span class="help-block">{% trans %}
+                        Minimum delay in seconds between sending queued notifications (default 60). Set to 0 to disable throttling.
+                    {% endtrans %}
+                </span>
+            </div>
+        </div>
+
     </fieldset>
     <fieldset>
         <legend>{{ _('EMail Configuration') }}</legend>
@@ -271,6 +282,17 @@
                         *You may need to save this settings page before any modifications are active*
                         Once you have filled in all of the required entries you can use the test button to immediately send a text.
                         You can also use the button in the navigation bar to send a text (with picture if enabled) at any time.
+                    {% endtrans %}
+                </span>
+            </div>
+        </div>
+
+        <div class="control-group">
+        <label class="control-label">{{ _('Notification throttle (seconds)') }}</label>
+            <div class="controls">
+                <input class="input-mini" type="number" min="0" max="3600" data-bind="value: settings.settings.plugins.OctoText.notification_throttle" required>
+                <span class="help-block">{% trans %}
+                        Minimum delay in seconds between sending queued notifications (default 60). Set to 0 to disable throttling.
                     {% endtrans %}
                 </span>
             </div>

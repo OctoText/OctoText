@@ -110,7 +110,11 @@ class OctoTextPlugin(
                 )
             self._logger.debug("Send Message result: %s", result)
             self.notifyQ.task_done()
-            time.sleep(60)  # make this adjustable?
+            throttle = max(
+                0, int(self._settings.get(["notification_throttle"]) or 0)
+            )
+            if throttle > 0:
+                time.sleep(throttle)
         pass
 
     ##~~ SettingsPlugin mixin
@@ -148,6 +152,7 @@ class OctoTextPlugin(
             "show_navbar_button": True,
             "show_fail_cancel": False,
             "mmu_timeout": 0,
+            "notification_throttle": 60,
             "use_ssl": False,
         }
 
