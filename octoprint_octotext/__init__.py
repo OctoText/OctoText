@@ -261,6 +261,8 @@ class OctoTextPlugin(
             )
 
         passw = self._settings.get(["server_pass"])
+        if passw and (name or "").strip().lower() == "smtp.gmail.com":
+            passw = passw.replace(" ", "")
         phone_numb = self._settings.get(["phone_numb"])
         carrier_addr = self._settings.get(["carrier_address"])
         # alert = self._settings.get(["smtp_alert"])
