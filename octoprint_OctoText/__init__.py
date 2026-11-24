@@ -292,6 +292,18 @@ class OctoTextPlugin(
         email_addr = phone_numb + "@%s" % carrier_addr
         return [None, email_addr]
 
+    def _get_from_address(self):
+        from_addr = (self._settings.get(["from_address"]) or "").strip()
+        if from_addr:
+            return from_addr
+        if self._settings.get(["validate_username"]):
+            return self._settings.get(["username"])
+        return (
+            self._settings.get(["username"])
+            + "@"
+            + self._settings.get(["servername"])
+        )
+
     def _prepare_email_message_and_send(
         self, title, body, sender=None, thumbnail=None, send_image=True, direct_send=False
     ):
@@ -350,16 +362,7 @@ class OctoTextPlugin(
         if body is None:
             body = ""
 
-        fromAddr = self._settings.get(["from_address"])
-        if fromAddr is None or len(fromAddr) == 0:
-            fromAddr = (
-                self._settings.get(["username"]) + "@" + self._settings.get(["servername"])
-            )
-
-        # Send text message through SMS gateway of destination number/address
-        validate = self._settings.get(["validate_username"])
-        if validate:
-            fromAddr = self._settings.get(["username"])
+        fromAddr = self._get_from_address()
 
         phone_numb = self._settings.get(["phone_numb"])
         carrier_addr = self._settings.get(["carrier_address"])
@@ -560,11 +563,7 @@ class OctoTextPlugin(
         email_message = data
 
         if email_message["From"] is None:
-            email_message["From"] = (
-                self._settings.get(["username"])
-                + "@"
-                + self._settings.get(["servername"])
-            )
+            email_message["From"] = self._get_from_address()
 
         if email_message["To"] is None:
             email_message["To"] = (
