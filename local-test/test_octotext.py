@@ -366,3 +366,31 @@ def test_time_thread_handles_none_print_time():
     with patch.object(stop_event, "wait", return_value=False):
         plugin.time_thread(stop_event)
 
+def test_blank_smtp_hostname_does_not_crash():
+    import smtplib
+
+    plugin = make_plugin(
+        settings_overrides={
+            "smtp_name": "smtp.example.com",
+            "smtp_port": 587,
+            "username": "myuser",
+            "servername": None,
+            "server_pass": "secret",
+            "validate_username": False,
+            "from_address": "",
+        }
+    )
+    assert plugin._get_from_address() == "myuser"
+
+    mock_smtp = MagicMock()
+    with patch.object(smtplib, "SMTP", return_value=mock_smtp):
+        err, _ = plugin.smtp_login_server()
+    assert err is None
+    mock_smtp.login.assert_called_once_with("myuser", "secret")
+
+    # on_after_startup should also not crash when servername is None
+    plugin.get_plugin_data_folder = MagicMock(return_value="/tmp/OctoText")
+    with patch("octoprint_octotext.Thread") as mock_thread:
+        plugin.on_after_startup()
+        mock_thread.assert_called_once()
+

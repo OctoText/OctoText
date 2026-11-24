@@ -257,12 +257,11 @@ class OctoTextPlugin(
         # message = self._settings.get(["smtp_message"])
         validate = self._settings.get(["validate_username"])
         if validate:
-            login = self._settings.get(["username"])
+            login = self._settings.get(["username"]) or ""
         else:
-            login = (
-                self._settings.get(["username"])
-                + "@"
-                + self._settings.get(["servername"])
+            login = self._format_address(
+                self._settings.get(["username"]),
+                self._settings.get(["servername"]),
             )
 
         passw = self._settings.get(["server_pass"])
@@ -309,16 +308,23 @@ class OctoTextPlugin(
         email_addr = f"{phone_numb}@{carrier_addr}"
         return [None, email_addr]
 
+    @staticmethod
+    def _format_address(local_part, domain):
+        local_part = local_part or ""
+        domain = domain or ""
+        if local_part and domain:
+            return f"{local_part}@{domain}"
+        return local_part
+
     def _get_from_address(self):
         from_addr = (self._settings.get(["from_address"]) or "").strip()
         if from_addr:
             return from_addr
         if self._settings.get(["validate_username"]):
-            return self._settings.get(["username"])
-        return (
-            self._settings.get(["username"])
-            + "@"
-            + self._settings.get(["servername"])
+            return self._settings.get(["username"]) or ""
+        return self._format_address(
+            self._settings.get(["username"]),
+            self._settings.get(["servername"]),
         )
 
     def _prepare_email_message_and_send(
@@ -610,10 +616,9 @@ class OctoTextPlugin(
             email_message["From"] = self._get_from_address()
 
         if email_message["To"] is None:
-            email_message["To"] = (
-                self._settings.get(["phone_numb"])
-                + "@"
-                + self._settings.get(["carrier_address"])
+            email_message["To"] = self._format_address(
+                self._settings.get(["phone_numb"]),
+                self._settings.get(["carrier_address"]),
             )
 
         subject = email_message["Subject"]
@@ -634,7 +639,10 @@ class OctoTextPlugin(
             self._settings.get(["smtp_name"]),
             self._settings.get(["smtp_port"]),
             self._settings.get(["smtp_message"]),
-            self._settings.get(["username"]) + "@" + self._settings.get(["servername"]),
+            self._format_address(
+                self._settings.get(["username"]),
+                self._settings.get(["servername"]),
+            ),
         )
         # on loading of plugin look for the existence of the prusa or cura thumbnail plugins
 
