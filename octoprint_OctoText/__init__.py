@@ -377,7 +377,11 @@ class OctoTextPlugin(
             self._logger.debug(f"Cc: settings - {cc_set}")
             email_message["Cc"] = cc_set
 
-        email_message["Subject"] = (self._settings.get(["subject_prefix"]) or "") + appearance_name_prefix + title
+        email_message["Subject"] = (
+            (self._settings.get(["subject_prefix"]) or "")
+            + appearance_name_prefix
+            + title
+        )
         email_message["From"] = fromAddr  # 'OctoText@outlook.com'
         email_message["To"] = email_addr
         email_message["Date"] = formatdate(localtime=True)

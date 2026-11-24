@@ -216,15 +216,13 @@
         </div>
 
         <div class="control-group">
-            <label class="control-label">{{ _('Subject prefix:') }}</label>
+            <label class="control-label">{{ _('Subject prefix') }}</label>
             <div class="controls">
-                <form class="form-inline">
-                    <input class="input-large" type="text" data-bind="value: settings.settings.plugins.OctoText.subject_prefix" />
-                    <span class="help-block">{% trans %}
-                            Optional: Text to add as a subject prefix
-                        {% endtrans %}
-                    </span>
-                </form>
+                <input class="input-large" type="text" data-bind="value: settings.settings.plugins.OctoText.subject_prefix" />
+                <span class="help-block">{% trans %}
+                        Optional: Text to add as a subject prefix
+                    {% endtrans %}
+                </span>
             </div>
         </div>
 
