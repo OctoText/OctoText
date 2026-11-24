@@ -48,7 +48,11 @@ jobs:
       - name: Create venv and install dependencies
         run: |
           uv venv --python ${{ matrix.python }} .venv
-          uv pip install --python .venv/bin/python "octoprint==${{ matrix.octoprint }}" pytest ${{ matrix.extra }}
+          if [ -n "${{ matrix.extra }}" ]; then
+            uv pip install --python .venv/bin/python "octoprint==${{ matrix.octoprint }}" pytest "${{ matrix.extra }}"
+          else
+            uv pip install --python .venv/bin/python "octoprint==${{ matrix.octoprint }}" pytest
+          fi
           uv pip install --python .venv/bin/python -e .
 
       - name: Run pytest
