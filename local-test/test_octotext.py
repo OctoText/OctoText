@@ -263,3 +263,37 @@ def test_classicwebcam_integration():
         os.remove(res["path"])
     finally:
         server.shutdown()
+
+
+def test_gmail_app_password_strips_spaces_only_for_gmail():
+    import smtplib
+
+    gmail_plugin = make_plugin(
+        settings_overrides={
+            "smtp_name": "smtp.gmail.com",
+            "smtp_port": 587,
+            "username": "user",
+            "servername": "gmail.com",
+            "server_pass": "abcd efgh ijkl mnop",
+        }
+    )
+    mock_smtp = MagicMock()
+    with patch.object(smtplib, "SMTP", return_value=mock_smtp):
+        err, _ = gmail_plugin.smtp_login_server()
+    assert err is None
+    mock_smtp.login.assert_called_once_with("user@gmail.com", "abcdefghijklmnop")
+
+    other_plugin = make_plugin(
+        settings_overrides={
+            "smtp_name": "smtp.office365.com",
+            "smtp_port": 587,
+            "username": "user",
+            "servername": "outlook.com",
+            "server_pass": "pass with spaces",
+        }
+    )
+    mock_smtp_other = MagicMock()
+    with patch.object(smtplib, "SMTP", return_value=mock_smtp_other):
+        err, _ = other_plugin.smtp_login_server()
+    assert err is None
+    mock_smtp_other.login.assert_called_once_with("user@outlook.com", "pass with spaces")

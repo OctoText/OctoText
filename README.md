@@ -69,6 +69,17 @@ Another resource for SMS gateways is the international site found here: https://
 
 SSL and TLS protocols are supported - you must enable SSL if you need to use it for your provider (TLS is the default).
 
+### Gmail Setup
+Gmail requires a **Google App Password** (your regular Google account password will not work):
+
+1. Enable **2-Step Verification** at `myaccount.google.com` → **Security**.
+2. Open **App passwords** and generate a new App Password (e.g., named `OctoText`).
+3. Configure OctoText with:
+   - **SMTP gateway:** `smtp.gmail.com`
+   - **SMTP port:** `587` (leave SSL unchecked for STARTTLS)
+   - **Username and host address:** `<your-gmail-username>` @ `gmail.com`
+   - **Email password:** the 16-character App Password (spaces from Google's `xxxx xxxx xxxx xxxx` display format are automatically stripped for `smtp.gmail.com`).
+
 If you would rather receive email notifications in place of a text, then you should simply enter the username and host address in the
 destination fields instead of the phone/gateway entries:
 
