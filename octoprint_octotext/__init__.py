@@ -116,6 +116,7 @@ class OctoTextPlugin(
             "smtp_name": "smtp.office365.com",
             "smtp_alert": "*ALERT from your PRINTER*",
             "smtp_message": "Your printer is creating something wonderful!",
+            "from_address": "",
             "username": "YourEmail",
             "servername": "outlook.com",
             "server_login": "YourEmail@outlook.com",  # obsoleted
@@ -135,6 +136,8 @@ class OctoTextPlugin(
             "en_printfail": False,
             "en_printpaused": True,
             "en_printresumed": False,
+            "subject_prefix": "",
+            "include_appearance_prefix": True,
             "show_navbar_button": True,
             "show_fail_cancel": False,
             "mmu_timeout": 0,
@@ -294,6 +297,18 @@ class OctoTextPlugin(
         email_addr = f"{phone_numb}@{carrier_addr}"
         return [None, email_addr]
 
+    def _get_from_address(self):
+        from_addr = (self._settings.get(["from_address"]) or "").strip()
+        if from_addr:
+            return from_addr
+        if self._settings.get(["validate_username"]):
+            return self._settings.get(["username"])
+        return (
+            self._settings.get(["username"])
+            + "@"
+            + self._settings.get(["servername"])
+        )
+
     def _prepare_email_message_and_send(
         self, title, body, sender=None, thumbnail=None, send_image=True, direct_send=False
     ):
@@ -345,19 +360,16 @@ class OctoTextPlugin(
                     delete_image_after_sent = True
             pass
 
-        appearance_name = self.get_printer_name()
-        self._logger.debug("Appearance name (subject): %s", appearance_name)
+        appearance_name_prefix = ""
+        if self._settings.get(["include_appearance_prefix"]):
+            appearance_name = self.get_printer_name()
+            appearance_name_prefix = appearance_name + ": "
+            self._logger.debug("Appearance name (subject): %s", appearance_name)
 
         if body is None:
             body = ""
 
-        fromAddr = (
-            self._settings.get(["username"]) + "@" + self._settings.get(["servername"])
-        )
-        # Send text message through SMS gateway of destination number/address
-        validate = self._settings.get(["validate_username"])
-        if validate:
-            fromAddr = self._settings.get(["username"])
+        fromAddr = self._get_from_address()
 
         phone_numb = self._settings.get(["phone_numb"])
         carrier_addr = self._settings.get(["carrier_address"])
@@ -374,7 +386,11 @@ class OctoTextPlugin(
             self._logger.debug("Cc: settings - %s", cc_set)
             email_message["Cc"] = cc_set
 
-        email_message["Subject"] = appearance_name + ": " + title
+        email_message["Subject"] = (
+            (self._settings.get(["subject_prefix"]) or "")
+            + appearance_name_prefix
+            + title
+        )
         email_message["From"] = fromAddr  # 'OctoText@outlook.com'
         email_message["To"] = email_addr
         email_message["Date"] = formatdate(localtime=True)
@@ -575,11 +591,7 @@ class OctoTextPlugin(
         email_message = data
 
         if email_message["From"] is None:
-            email_message["From"] = (
-                self._settings.get(["username"])
-                + "@"
-                + self._settings.get(["servername"])
-            )
+            email_message["From"] = self._get_from_address()
 
         if email_message["To"] is None:
             email_message["To"] = (
