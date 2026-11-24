@@ -424,3 +424,34 @@ def test_suppress_idle_printer_errors():
             octoprint.events.Events.ERROR, {"error": "Thermal runaway while paused"}
         )
         assert mock_send.call_count == 2
+
+
+def test_error_sent_when_octoprint_transitions_to_offline_before_event():
+    import octoprint.events
+
+    plugin = make_plugin(
+        settings_overrides={
+            "en_error": True,
+            "en_error_printing_only": True,
+            "en_printstart": False,
+        }
+    )
+    plugin._printer = MagicMock()
+    plugin._printer.is_printing.return_value = False
+    plugin._printer.is_paused.return_value = False
+
+    with patch.object(plugin, "_prepare_email_message_and_send") as mock_send:
+        plugin.on_event(
+            octoprint.events.Events.PRINT_STARTED,
+            {"name": "part.gcode", "origin": "local"},
+        )
+        # OctoPrint already transitioned to Error/Offline before firing Events.ERROR
+        plugin.on_event(
+            octoprint.events.Events.ERROR, {"error": "Printer halted"}
+        )
+        assert mock_send.call_count == 1
+        # Subsequent error while now idle should be suppressed
+        plugin.on_event(
+            octoprint.events.Events.ERROR, {"error": "Offline after error"}
+        )
+        assert mock_send.call_count == 1
