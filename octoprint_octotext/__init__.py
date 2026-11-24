@@ -24,7 +24,12 @@ import octoprint.events
 import octoprint.plugin
 import requests
 from flask_login import current_user
-from PIL import Image, ImageOps
+
+try:
+    from PIL import Image, ImageOps
+except ImportError:  # Pillow is optional, snapshots then stay unprocessed
+    Image = None
+    ImageOps = None
 
 try:
     from octoprint.webcams import get_snapshot_webcam
@@ -506,6 +511,10 @@ class OctoTextPlugin(
     # this code will rotate or flip the image based on the webcam settings
     def _process_snapshot(self, snapshot_path, hflip, vflip, rotate):
         if not hflip and not vflip and not rotate:
+            return
+
+        if Image is None:
+            self._logger.warning("Pillow is not installed, sending the snapshot unprocessed")
             return
 
         try:
