@@ -5,6 +5,20 @@ Allow users to optionally enable and customize notification **Subject** and **Bo
 
 ---
 
+## Review Decisions (resolved)
+
+The seven review answers are the authoritative behavior for this plan:
+
+1. **Template default — bare.** The setting is opt-in and templates start blank; `{percent}` renders a bare integer (`50`), not `50%`, so users add `%` in the template when they want it.
+2. **Multi-tool temperatures — list all.** `{tool_temp}` lists every detected tool (for example `T0 210°C / 210°C, T1 205°C / 205°C`), not just the first tool.
+3. **One progress template — yes.** A single `print_progress` template applies to every progress notification mode, including percentage-based progress and time-based/fixed-interval progress. Users do not maintain separate templates for those modes.
+4. **`{event}` — full built-in title, yes.** `{event}` is the complete built-in event title including dynamic details (for example `Print Fail after 120 seconds`), not a generic event label.
+5. **Preview placeholder — exactly `???`.** Unresolved advanced lookups show three question marks with no surrounding quotation marks in the Settings preview. Actual notifications still resolve missing data to an empty string instead of failing or emitting a quoted placeholder.
+6. **README documentation — yes.** Document the feature, every core placeholder, and the generic metadata/helper lookups in `README.md`.
+7. **Settings test button — overrides when set.** The Settings test button sends the selected event's custom Subject/Body with sample data when templates are enabled and that event has an override; otherwise it sends the built-in test message. The navbar test button remains built-in only.
+
+---
+
 ## 1. Supported Template Variables
 
 ### A. Core OctoPrint Variables
@@ -46,10 +60,10 @@ Instead of hardcoding integrations for specific plugins, OctoText supports two g
 
 1. **Settings defaults** (disabled & empty by default for 100% backwards compatibility):
    - `"en_custom_templates": False` — master toggle; when `False`, OctoText always uses built-in wording without losing saved templates.
-   - `"templates"` dict with the **9 event types**: `print_started`, `print_done`, `print_progress`, `print_paused`, `print_resumed`, `print_cancelled`, `print_failed`, `upload`, `error` — each storing `{"subject": "", "body": ""}` independently.
+   - `"templates"` dict with the **9 event types**: `print_started`, `print_done`, `print_progress`, `print_paused`, `print_resumed`, `print_cancelled`, `print_failed`, `upload`, `error` — each storing `{"subject": "", "body": ""}` independently. `print_progress` is one shared template for both percentage-based and time-based/fixed-interval progress notifications.
 2. **Template lookup (`_resolve_template(event_key, field)`):**
-   - Returns `""` immediately if `en_custom_templates` is `False`.
-   - Otherwise, if the event has a non-empty custom template for `subject` or `body`, renders it; if blank, uses OctoText's built-in wording for that event.
+   - Returns `None` when custom templates are disabled or the selected field is blank; callers treat `None` as "no override" and keep the built-in wording for that event.
+   - Otherwise renders the stored template. A rendered subject that ends up empty after substitution also falls back to the built-in event title.
 3. **Metadata & generic plugin resolver (`_get_template_context(...)`, `_resolve_meta_path(...)`, `_resolve_plugin_helper(...)`):**
    - Safely queries `self._printer.get_current_data()`, `self._printer.get_current_temperatures()`, and `self._file_manager.get_metadata(...)` inside `try/except` blocks so offline/missing data gracefully falls back to `""`.
    - Computes `{eta}` from `datetime.datetime.now() + datetime.timedelta(seconds=int(printTimeLeft))` formatted with `strftime("%I:%M %p").lstrip("0")` for Linux/Windows compatibility.
@@ -79,7 +93,7 @@ Instead of hardcoding integrations for specific plugins, OctoText supports two g
    - **Subject template** input and **Body template** textarea using Bootstrap 2 `input-block-level` (fits cleanly inside OctoPrint's ~700px Settings modal without overflowing), each displaying a watermark/placeholder (`Leave blank to use default`).
    - **Reset** button clears the selected event's custom Subject and Body back to blank (built-in default).
    - **Clickable Variable Reference Toggle:** label defined via `gettext(...)` in `OctoText.js` (avoiding translated apostrophes inside Jinja/Knockout `data-bind` strings); expands a compact responsive table listing every core `{variable}`, description, quick insert buttons (`+Subj` / `+Body`), plus an **"Advanced: Data from other plugins"** note documenting `{meta:...}` and `{plugin:...}` with concrete examples (including PrintTimeGenius as an example).
-   - **Live Sample Preview (`OctoText.js` via KnockoutJS `ko.computed`):** always shows what the selected event's **Subject** and **Body** will look like with realistic sample data (reflecting `subject_prefix` and `include_appearance_prefix`). When blank, it displays OctoText's **built-in default** output for that event; as soon as you type a custom template, it updates live (with sample values for the documented `{meta:...}`/`{plugin:...}` examples; any other advanced lookup shows `???` in the preview only, since the backend still resolves missing data to `""`).
+   - **Live Sample Preview (`OctoText.js` via KnockoutJS `ko.computed`):** always shows what the selected event's **Subject** and **Body** will look like with realistic sample data (reflecting `subject_prefix` and `include_appearance_prefix`). When blank, it displays OctoText's **built-in default** output for that event; as soon as you type a custom template, it updates live (with sample values for the documented `{meta:...}`/`{plugin:...}` examples; any other advanced lookup shows exactly `???`—three question marks, no surrounding quotation marks—in the preview only, since the backend still resolves missing data to `""`).
 4. **Test button:** the Settings **Send a test message** button uses the selected event's overrides when custom templates are enabled and that event has at least one non-empty Subject/Body template. It renders with the same sample values as the live preview, so the received message matches the preview. With no event selected, or no overrides set, it sends the existing built-in test message. The navbar test button always sends the built-in test message.
 
 ---
@@ -103,4 +117,4 @@ Instead of hardcoding integrations for specific plugins, OctoText supports two g
 
 - Add a short **Custom notification templates** section: the master toggle, the 9 event types, and the blank/disabled fallback behavior.
 - Document every core placeholder in a table, noting that `{percent}` is a bare integer (`50`, so write `{percent}%` for a percent sign) and that `{tool_temp}` lists each tool (`T0 …`, `T1 …`).
-- Document the generic `{meta:dotted.path}` and `{plugin:plugin_id.helper[.key]}` syntax, with PrintTimeGenius as the worked example, and note that missing plugins, helpers, keys or data render as an empty string rather than failing the notification.
+- Document the generic `{meta:dotted.path}` and `{plugin:plugin_id.helper_name}` (optionally `{plugin:plugin_id.helper_name.key}`) syntax, with PrintTimeGenius as the worked example, and note that missing plugins, helpers, keys or data render as an empty string rather than failing the notification.
