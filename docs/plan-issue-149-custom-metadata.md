@@ -12,15 +12,15 @@ Read directly from OctoPrint's `self._printer.get_current_data()`, `self._printe
 
 | Variable | Description | Sample Value (for Live Preview) |
 |---|---|---|
-| `{event}` | Built-in event title (e.g., `Print Progress 50% finished.`) | `Print Progress 50% finished.` |
+| `{event}` | Full built-in event title, including dynamic details (e.g., `Print Progress 50% finished.`, `Print Fail after 120 seconds`) | `Print Progress 50% finished.` |
 | `{message}` | Built-in event body/details | `benchy.gcode` |
 | `{printer}` | Printer appearance name | `Prusa MK4` |
 | `{file}` | Current or event filename | `benchy.gcode` |
-| `{percent}` | Completion percentage (integer) | `50%` |
+| `{percent}` | Completion percentage as a bare integer, without a `%` sign (add `%` in the template) | `50` |
 | `{elapsed}` | Elapsed print time (`H:MM:SS`) | `1:15:00` |
 | `{remaining}` | Estimated time remaining (`H:MM:SS`, from OctoPrint's active estimator) | `1:15:00` |
 | `{eta}` | Estimated local completion clock time | `3:45 PM` |
-| `{tool_temp}` | Hotend actual / target temperature | `210°C / 210°C` |
+| `{tool_temp}` | Hotend actual / target temperatures — one entry per tool | `T0 210°C / 210°C, T1 205°C / 205°C` |
 | `{bed_temp}` | Bed actual / target temperature | `60°C / 60°C` |
 | `{state}` | Current printer state (`Printing`, `Paused`, `Operational`, etc.) | `Printing` |
 | `{error}` | Error text (for `Printer error` events) | `Thermal runaway` |
@@ -62,7 +62,7 @@ Instead of hardcoding integrations for specific plugins, OctoText supports two g
      - Stray braces (`{`, `}`) and attribute traversal (`{printer.__class__}`) never raise errors or evaluate attributes.
 5. **Notification assembly (`_prepare_email_message_and_send()`):**
    - Accepts optional `event_key` and `template_extras`, rendering custom Subject/Body when enabled & configured for that event while preserving existing `subject_prefix` and `include_appearance_prefix` behavior.
-   - **Send a test message** (`on_api_command("test")`) remains unchanged (always uses the built-in test subject + `smtp_message`).
+   - **Send a test message** (`on_api_command("test")`) accepts an optional `event` key in the request data. The Settings page test button passes the currently selected template event. When `en_custom_templates` is `True` and that event has at least one non-empty override, the test renders that event's Subject/Body using the same sample values as the live preview (a blank field falls back to the event's built-in wording); otherwise it keeps today's built-in test subject + `smtp_message`. The navbar envelope button sends no `event` and always uses the built-in test message.
 
 ---
 
@@ -79,7 +79,8 @@ Instead of hardcoding integrations for specific plugins, OctoText supports two g
    - **Subject template** input and **Body template** textarea using Bootstrap 2 `input-block-level` (fits cleanly inside OctoPrint's ~700px Settings modal without overflowing), each displaying a watermark/placeholder (`Leave blank to use default`).
    - **Reset** button clears the selected event's custom Subject and Body back to blank (built-in default).
    - **Clickable Variable Reference Toggle:** label defined via `gettext(...)` in `OctoText.js` (avoiding translated apostrophes inside Jinja/Knockout `data-bind` strings); expands a compact responsive table listing every core `{variable}`, description, quick insert buttons (`+Subj` / `+Body`), plus an **"Advanced: Data from other plugins"** note documenting `{meta:...}` and `{plugin:...}` with concrete examples (including PrintTimeGenius as an example).
-   - **Live Sample Preview (`OctoText.js` via KnockoutJS `ko.computed`):** always shows what the selected event's **Subject** and **Body** will look like with realistic sample data (reflecting `subject_prefix` and `include_appearance_prefix`). When blank, it displays OctoText's **built-in default** output for that event; as soon as you type a custom template, it updates live (with sample values for common `{meta:...}`/`{plugin:...}` expressions as well).
+   - **Live Sample Preview (`OctoText.js` via KnockoutJS `ko.computed`):** always shows what the selected event's **Subject** and **Body** will look like with realistic sample data (reflecting `subject_prefix` and `include_appearance_prefix`). When blank, it displays OctoText's **built-in default** output for that event; as soon as you type a custom template, it updates live (with sample values for the documented `{meta:...}`/`{plugin:...}` examples; any other advanced lookup shows `???` in the preview only, since the backend still resolves missing data to `""`).
+4. **Test button:** the Settings **Send a test message** button uses the selected event's overrides when custom templates are enabled and that event has at least one non-empty Subject/Body template. It renders with the same sample values as the live preview, so the received message matches the preview. With no event selected, or no overrides set, it sends the existing built-in test message. The navbar test button always sends the built-in test message.
 
 ---
 
@@ -93,5 +94,13 @@ Instead of hardcoding integrations for specific plugins, OctoText supports two g
   - `{meta:a.b.c}` resolves nested dict keys from `get_current_data()` and `get_metadata()`, and safely returns `""` on missing paths or non-dict values.
   - `{plugin:id.helper}` and `{plugin:id.helper.key}` resolve via `self._plugin_manager.get_helpers()`, and safely return `""` when the plugin/helper is missing or raises an exception.
   - Missing/offline printer data (`None` fields), unknown variables (`{unknown}`), malformed braces (`{oops`), and attribute traversal (`{printer.__class__}`) never raise exceptions.
+  - `{percent}` renders a bare integer (no `%`), and `{tool_temp}` lists every tool when more than one is present.
+  - The settings test command renders the selected event's override with sample data when enabled, falls back to the event's built-in wording for a blank field, and keeps the built-in test message when no event or override is supplied.
 - **Manual UI verification:**
-  - Verify progressive disclosure: checkbox unchecked hides dropdown/editor; checkbox checked shows dropdown starting on empty `-- Select an event to customize --`; choosing an event reveals Subject/Body inputs (with `Leave blank to use default` watermarks), variable reference toggle (including generic plugin data docs), and live preview showing built-in defaults when blank and live updates when edited.
+  - Verify progressive disclosure: checkbox unchecked hides dropdown/editor; checkbox checked shows dropdown starting on empty `-- Select an event to customize --`; choosing an event reveals Subject/Body inputs (with `Leave blank to use default` watermarks), variable reference toggle (including generic plugin data docs), and live preview showing built-in defaults when blank and live updates when edited. Unknown advanced lookups show `???` in the preview. The Settings test button sends the selected event's override (with sample data) when enabled, and the navbar test button still sends the built-in test message.
+
+## 5. Documentation (`README.md`)
+
+- Add a short **Custom notification templates** section: the master toggle, the 9 event types, and the blank/disabled fallback behavior.
+- Document every core placeholder in a table, noting that `{percent}` is a bare integer (`50`, so write `{percent}%` for a percent sign) and that `{tool_temp}` lists each tool (`T0 …`, `T1 …`).
+- Document the generic `{meta:dotted.path}` and `{plugin:plugin_id.helper[.key]}` syntax, with PrintTimeGenius as the worked example, and note that missing plugins, helpers, keys or data render as an empty string rather than failing the notification.
