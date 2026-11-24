@@ -227,6 +227,22 @@
             </div>
         </div>
 
+        <div class="control-group">
+            <label class="control-label">{{ _('Subject prefix') }}</label>
+            <div class="controls">
+                <input class="input-large" type="text" data-bind="value: settings.settings.plugins.OctoText.subject_prefix" />
+                <span class="help-block">{% trans %}
+                        Optional: Text to add as a subject prefix
+                    {% endtrans %}
+                </span>
+            </div>
+        </div>
+
+        <label class="checkbox">
+            <input type="checkbox" data-bind="checked: settings.settings.plugins.OctoText.include_appearance_prefix">
+            Include the name of the printer as a subject prefix.
+        </label>
+
         <label class="checkbox">
             <input type="checkbox" value="Progress notifications" data-bind="checked: settings.settings.plugins.OctoText.show_navbar_button">
             Enable the test icon (an envelope) on the top of the navigation bar.
