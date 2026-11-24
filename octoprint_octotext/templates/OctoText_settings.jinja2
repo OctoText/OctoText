@@ -62,11 +62,26 @@
             Get a notification periodically as the print progresses. Please set the progress interval below when enabled.
         </label>
         <label class="checkbox" data-bind="visible: settings.settings.plugins.OctoText.en_progress" >
+            <input type="checkbox" value="Fixed time progress notification" data-bind="checked: settings.settings.plugins.OctoText.en_progress_fixed_time">
+            Get progress notifications at a fixed time interval (in minutes) instead of percentage.
+        </label>
+        <label class="checkbox" data-bind="visible: settings.settings.plugins.OctoText.en_progress() && !settings.settings.plugins.OctoText.en_progress_fixed_time()" >
             <input type="checkbox" value="Time based progress notification" data-bind="checked: settings.settings.plugins.OctoText.en_progress_time">
             Get progress notifications based on the estimated print time reported - not the percentage of the file printed.
         </label>
 
-        <div class="control-group" data-bind="visible: settings.settings.plugins.OctoText.en_progress()">
+        <div class="control-group" data-bind="visible: settings.settings.plugins.OctoText.en_progress() && settings.settings.plugins.OctoText.en_progress_fixed_time()">
+        <label class="control-label">{{ _('Progress Interval (minutes)') }}</label>
+            <div class="controls">
+                <input class="input-mini" type="number" min="1" max="1440" data-bind="value: settings.settings.plugins.OctoText.progress_fixed_minutes" required>
+                <span class="help-block">{% trans %}
+                        Send a progress notification every N minutes while printing (e.g., 60 for hourly updates, 120 for every 2 hours).
+                    {% endtrans %}
+                </span>
+            </div>
+        </div>
+
+        <div class="control-group" data-bind="visible: settings.settings.plugins.OctoText.en_progress() && !settings.settings.plugins.OctoText.en_progress_fixed_time()">
         <label class="control-label">{{ _('Progress Interval (percentage)') }}</label>
             <div class="controls">
                 <input class="input-mini" type="number" min="1" max="50" data-bind="value: settings.settings.plugins.OctoText.progress_interval" required>
