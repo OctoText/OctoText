@@ -318,3 +318,51 @@ def test_duplicate_progress_emails_deduplicated():
         plugin.on_print_progress("local", "benchy.gcode", 25)
         assert mock_send.call_count == 3
 
+def test_time_progress_starts_and_stops_independently_of_other_events():
+    import octoprint.events
+
+    plugin = make_plugin(
+        settings_overrides={
+            "en_progress": True,
+            "en_progress_time": True,
+            "en_printstart": False,
+            "en_printend": False,
+        }
+    )
+    with patch.object(plugin, "manage_progress_thread") as mock_mgr:
+        plugin.on_event(
+            octoprint.events.Events.PRINT_STARTED,
+            {"name": "test.gcode", "origin": "local"},
+        )
+        mock_mgr.assert_called_once_with()
+
+        mock_mgr.reset_mock()
+        plugin.on_event(
+            octoprint.events.Events.PRINT_DONE,
+            {"name": "test.gcode", "time": 120},
+        )
+        mock_mgr.assert_called_once_with(stop=True)
+
+
+def test_time_thread_handles_none_print_time():
+    import threading
+
+    plugin = make_plugin(
+        settings_overrides={
+            "en_progress": True,
+            "en_progress_time": True,
+            "progress_interval": 1,
+        }
+    )
+    plugin._printer = MagicMock()
+    # First poll: printTime is None, printTimeLeft is 100; second poll: printTimeLeft is 0 -> clean exit
+    plugin._printer.get_current_data.side_effect = [
+        {"progress": {"printTime": None, "printTimeLeft": 100}},
+        {"progress": {"printTime": None, "printTimeLeft": 100}},
+        {"progress": {"printTime": 100, "printTimeLeft": 0}},
+    ]
+    stop_event = threading.Event()
+    # Should not raise TypeError when printTime is None
+    with patch.object(stop_event, "wait", return_value=False):
+        plugin.time_thread(stop_event)
+
