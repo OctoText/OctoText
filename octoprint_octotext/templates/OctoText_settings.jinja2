@@ -1,4 +1,4 @@
-<form class="form-horizontal">
+﻿<form class="form-horizontal">
     <fieldset>
         <p class="help-block">{% trans %}
                 Select the printer events to be texted or emailed.
@@ -27,7 +27,7 @@
         </label>
         <label class="checkbox" style="margin-left: 20px;" data-bind="visible: settings.settings.plugins.OctoText.en_error()">
             <input type="checkbox" value="Printer error while printing only" data-bind="checked: settings.settings.plugins.OctoText.en_error_printing_only">
-            Only send error notifications while printing (suppresses offline alerts when printer is powered off).
+            Only send error notifications while printing.
         </label>
         <label class="checkbox">
             <input type="checkbox" value="Print Failed/Print Canceled" data-bind="checked: settings.settings.plugins.OctoText.show_fail_cancel">
