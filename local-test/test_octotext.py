@@ -204,7 +204,11 @@ def test_on_api_command_test_success_and_errors():
 
         with patch.object(plugin, "_prepare_email_message_and_send", return_value="LOGIN_E"):
             resp = plugin.on_api_command("test", {})
-            assert resp.get_json() == {"result": False, "error": "LOGIN_E"}
+            assert resp.get_json() == {
+                "result": False,
+                "error": "LOGIN_E",
+                "login": "YourEmail@outlook.com",
+            }
 
         with patch.object(plugin, "_prepare_email_message_and_send", side_effect=RuntimeError("boom")):
             resp = plugin.on_api_command("test", {})
@@ -394,3 +398,25 @@ def test_blank_smtp_hostname_does_not_crash():
         plugin.on_after_startup()
         mock_thread.assert_called_once()
 
+
+
+def test_login_error_returns_attempted_login_username():
+    app = flask.Flask(__name__)
+    plugin = make_plugin(
+        settings_overrides={
+            "username": "alice",
+            "servername": "fastmail.com",
+            "validate_username": False,
+        }
+    )
+    with app.app_context():
+        with patch.object(plugin, "_prepare_email_message_and_send", return_value="LOGIN_E"):
+            resp = plugin.on_api_command("test", {})
+            assert resp.get_json() == {
+                "result": False,
+                "error": "LOGIN_E",
+                "login": "alice@fastmail.com",
+            }
+        with patch.object(plugin, "_prepare_email_message_and_send", return_value=True):
+            resp = plugin.on_api_command("test", {})
+            assert resp.get_json() == {"result": True, "error": None}

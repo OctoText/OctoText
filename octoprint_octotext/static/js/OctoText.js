@@ -39,6 +39,9 @@ $(function() {
                             notice_type = "notice";
                         } else if (response.error === "LOGIN_E") {
                             text = gettext("Failure to login to your email account!");
+                            if (response.login) {
+                                text += " (" + gettext("Login used:") + " " + response.login + ")";
+                            }
                         } else if (response.error === "SENDM_E"){
                             text = gettext("Exception while logging into mail server. Check your login and password.");
                         } else if (response.error === "SMTP_E"){
