@@ -1,0 +1,7 @@
+.venv-*
+.basedir-*
+.dist/
+smtp.crt
+smtp.key
+__pycache__/
+.pytest_cache/
