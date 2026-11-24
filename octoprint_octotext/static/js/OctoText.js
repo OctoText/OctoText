@@ -20,22 +20,15 @@ $(function() {
         
         self.sendTestMessage = function() {
             self.busy(true);
-            $.ajax({
-                url: API_BASEURL + "plugin/OctoText",
-                type: "GET",
-                dataType: "json",
-                data: JSON.stringify({
-                    command: "test",
-                    /* token: self.settings.settings.plugins.OctoText.access_token(), */
-                    channel: self.settings.settings.plugins.OctoText.push_message()
-                }),
-                contentType: "application/json; charset=UTF-8",
-                success: function(response) {
+            OctoPrint.simpleApiCommand("OctoText", "test", {})
+                .done(function(response) {
                     self.busy(false);
                     if (response.result) {
                         new PNotify({
                             title: gettext("Congratulations!"),
-                            text: gettext("A test message was sent to OctoText, everything appears good on our side. \n\r Give your service a minute to route the text or email to you!"),
+                            title_escape: true,
+                            text: gettext("A test message was sent to OctoText, everything appears good on our side. Give your service a minute to route the text or email to you!"),
+                            text_escape: true,
                             type: "success"
                         });
                     } else {
@@ -55,15 +48,16 @@ $(function() {
                         }
                         new PNotify({
                             title: gettext("Test message problem!"),
+                            title_escape: true,
                             text: text,
+                            text_escape: true,
                             type: notice_type
                         });
                     }
-                },
-                error: function() {
+                })
+                .fail(function() {
                     self.busy(false);
-                }
-            });
+                });
         };
         // assign the injected parameters, e.g.:
         // self.loginStateViewModel = parameters[0];
