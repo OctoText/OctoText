@@ -1,4 +1,4 @@
-﻿# This is the working branch - changes to this version include:
+# This is the working branch - changes to this version include:
 # Redoing how notifications are sent.
 #
 # The current plan is to implement a thread-queue method
@@ -110,7 +110,11 @@ class OctoTextPlugin(
                 )
             self._logger.debug("Send Message result: %s", result)
             self.notifyQ.task_done()
-            time.sleep(60)  # make this adjustable?
+            throttle = max(
+                0, int(self._settings.get(["notification_throttle"]) or 0)
+            )
+            if throttle > 0:
+                time.sleep(throttle)
         pass
 
     ##~~ SettingsPlugin mixin
@@ -132,6 +136,8 @@ class OctoTextPlugin(
             "push_message": None,
             "progress_interval": 10,
             "en_progress_time": False,
+            "en_progress_fixed_time": False,
+            "progress_fixed_minutes": 60,
             "en_progress": False,
             "en_webcam": True,
             "en_printstart": True,
@@ -147,6 +153,7 @@ class OctoTextPlugin(
             "show_navbar_button": True,
             "show_fail_cancel": False,
             "mmu_timeout": 0,
+            "notification_throttle": 60,
             "use_ssl": False,
         }
 
@@ -172,7 +179,9 @@ class OctoTextPlugin(
             self._last_progress_sent = None
             return
 
-        if self._settings.get(["en_progress_time"]):
+        if self._settings.get(["en_progress_time"]) or self._settings.get(
+            ["en_progress_fixed_time"]
+        ):
             return
 
         # if these two events fire at the same time (printend and progress at 100%) we have two threads that are async
@@ -186,7 +195,7 @@ class OctoTextPlugin(
                 return
             self._last_progress_sent = progress
             printer_name = self.get_printer_name()
-            title = "Print Progress " + str(progress) + " percent finished."
+            title = f"Print Progress {progress}% finished."
             description = path
             self._prepare_email_message_and_send(
                 title, description, printer_name, None, self._settings.get(["en_webcam"])
@@ -719,7 +728,38 @@ class OctoTextPlugin(
 
     # ~~ thread for time based notification
     # setting the flag stopme will cause the thread to exit
+    def _uses_progress_thread(self):
+        return bool(
+            self._settings.get(["en_progress_time"])
+            or self._settings.get(["en_progress_fixed_time"])
+        )
+
     def time_thread(self, stopme):
+        if self._settings.get(["en_progress_fixed_time"]):
+            minutes = int(self._settings.get(["progress_fixed_minutes"]) or 60)
+            interval = max(60, minutes * 60)
+            self._logger.debug("Fixed progress interval: %s seconds", interval)
+            while not stopme.is_set():
+                if stopme.wait(interval):
+                    return
+                progr = self._printer.get_current_data()["progress"]
+                pt_current = progr.get("printTimeLeft")
+                printer_name = self.get_printer_name()
+                if pt_current is not None and pt_current > 0:
+                    time_left = datetime.timedelta(seconds=int(pt_current))
+                    title = "Print Progress " + str(time_left) + " time to finish."
+                else:
+                    title = "Print Progress update."
+                description = self.current_path
+                self._prepare_email_message_and_send(
+                    title,
+                    description,
+                    printer_name,
+                    None,
+                    self._settings.get(["en_webcam"]),
+                )
+            return
+
         ptl = None
         while ptl is None:
             if stopme.wait(1):
@@ -802,9 +842,7 @@ class OctoTextPlugin(
             self._is_printing = True
             self._last_progress_sent = None
             # Start time-based progress thread regardless of whether print-start email is enabled
-            if self._settings.get(["en_progress"]) and self._settings.get(
-                ["en_progress_time"]
-            ):
+            if self._settings.get(["en_progress"]) and self._uses_progress_thread():
                 self.manage_progress_thread()
 
             if not self._settings.get(["en_printstart"]):
@@ -824,7 +862,7 @@ class OctoTextPlugin(
         elif event == octoprint.events.Events.PRINT_DONE:
 
             self._is_printing = False
-            if self._settings.get(["en_progress_time"]):
+            if self._uses_progress_thread():
                 self.manage_progress_thread(stop=True)
 
             if not self._settings.get(["en_printend"]):
@@ -848,7 +886,7 @@ class OctoTextPlugin(
                 or self._printer.is_paused()
             )
             self._is_printing = False
-            if self._settings.get(["en_progress_time"]):
+            if self._uses_progress_thread():
                 self.manage_progress_thread(stop=True)
 
             if not self._settings.get(["en_error"]):
@@ -871,7 +909,7 @@ class OctoTextPlugin(
         elif event == octoprint.events.Events.PRINT_CANCELLED:
 
             self._is_printing = False
-            if self._settings.get(["en_progress_time"]):
+            if self._uses_progress_thread():
                 self.manage_progress_thread(stop=True)
 
             if not self._settings.get(["show_fail_cancel"]):
@@ -894,7 +932,7 @@ class OctoTextPlugin(
         elif event == octoprint.events.Events.PRINT_FAILED:
 
             self._is_printing = False
-            if self._settings.get(["en_progress_time"]):
+            if self._uses_progress_thread():
                 self.manage_progress_thread(stop=True)
 
             if not self._settings.get(["show_fail_cancel"]):

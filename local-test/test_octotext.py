@@ -480,3 +480,62 @@ def test_login_error_returns_attempted_login_username():
             resp = plugin.on_api_command("test", {})
             assert resp.get_json() == {"result": True, "error": None}
 
+def test_fixed_time_progress_interval():
+    import threading
+    import octoprint.events
+
+    plugin = make_plugin(
+        settings_overrides={
+            "en_progress": True,
+            "en_progress_fixed_time": True,
+            "en_progress_time": False,
+            "progress_fixed_minutes": 45,
+            "en_printstart": False,
+            "en_printend": False,
+        }
+    )
+    # Percentage progress should be skipped when fixed time mode is active
+    with patch.object(plugin, "_prepare_email_message_and_send") as mock_send:
+        plugin.on_print_progress("local", "part.gcode", 50)
+        mock_send.assert_not_called()
+
+    # PRINT_STARTED / PRINT_DONE start and stop the progress thread
+    with patch.object(plugin, "manage_progress_thread") as mock_mgr:
+        plugin.on_event(
+            octoprint.events.Events.PRINT_STARTED,
+            {"name": "part.gcode", "origin": "local"},
+        )
+        mock_mgr.assert_called_once_with()
+        mock_mgr.reset_mock()
+        plugin.on_event(
+            octoprint.events.Events.PRINT_DONE,
+            {"name": "part.gcode", "time": 120},
+        )
+        mock_mgr.assert_called_once_with(stop=True)
+
+    # time_thread waits for progress_fixed_minutes * 60 seconds and sends update
+    plugin._printer = MagicMock()
+    plugin._printer.get_current_data.return_value = {
+        "progress": {"printTime": 2700, "printTimeLeft": 3600}
+    }
+    stop_event = threading.Event()
+    waits = []
+
+    def fake_wait(seconds):
+        waits.append(seconds)
+        if len(waits) == 1:
+            return False
+        stop_event.set()
+        return True
+
+    with patch.object(stop_event, "wait", side_effect=fake_wait):
+        with patch.object(plugin, "_prepare_email_message_and_send") as mock_send:
+            plugin.time_thread(stop_event)
+            assert waits[0] == 45 * 60
+            assert mock_send.call_count == 1
+            assert "1:00:00" in mock_send.call_args[0][0]
+
+
+def test_notification_throttle_default_and_configurable():
+    plugin = make_plugin()
+    assert plugin.get_settings_defaults()["notification_throttle"] == 60
