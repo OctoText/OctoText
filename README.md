@@ -90,6 +90,44 @@ also doubles as a test message to check your settings. Just press it once and wa
 
 <img width="313" alt="Test button" src="assets/img/test.png">
 
+### Custom notification templates
+
+OctoText can optionally replace the built-in subject and body for each notification event. The master toggle is off by default, so existing setups keep their current wording and any saved templates are preserved while the feature is disabled.
+
+Templates are stored per event and per field, so you can customize only a subject, only a body, or any subset of the nine events: **Print started**, **Print finished**, **Print progress**, **Print paused**, **Print resumed**, **Print cancelled**, **Print failed**, **File uploaded** and **Printer error**. A blank field always falls back to the built-in OctoText wording.
+
+These placeholders are available in both the subject and body:
+
+| Variable | Description |
+|---|---|
+| `{event}` | Full built-in event title, including dynamic details (for example `Print Fail after 120 seconds`) |
+| `{message}` | Built-in event body/details |
+| `{printer}` | Printer appearance name |
+| `{file}` | Current or event filename |
+| `{percent}` | Completion percentage as a bare number |
+| `{elapsed}` | Elapsed print time (`H:MM:SS`) |
+| `{remaining}` | Estimated time remaining (`H:MM:SS`) |
+| `{eta}` | Estimated local completion time |
+| `{tool_temp}` | Hotend actual / target temperatures, one entry per tool |
+| `{bed_temp}` | Bed actual / target temperature |
+| `{state}` | Current printer state |
+| `{error}` | Error text (printer error events) |
+| `{user}` | User who paused, resumed or cancelled |
+| `{reason}` | Failure reason (print failed events) |
+
+`{percent}` is a bare number, so write `{percent}%` when you want a percent sign. `{tool_temp}` lists every hotend, for example `T0 210°C / 210°C, T1 205°C / 205°C`. Unknown placeholders are left as-is, and missing printer data renders as an empty value instead of failing the notification.
+
+#### Data from other plugins
+
+Two generic lookups pull data from installed OctoPrint plugins without hardcoding any specific integration:
+
+- `{meta:dotted.path}` reads OctoPrint's current printer data first, then the active file's metadata (where estimator and analysis plugins store their values).
+- `{plugin:plugin_id.helper_name}` calls a zero-argument helper registered by another plugin. Add a key to extract a field from a dictionary result: `{plugin:plugin_id.helper_name.key}`.
+
+Missing plugins, helpers, keys or paths render as an empty string and never stop a notification. With [PrintTimeGenius](https://plugins.octoprint.org/plugins/PrintTimeGenius/) installed, for example, `{meta:progress.printTimeLeftOrigin}` is `genius` while it is providing the estimate, and `{meta:analysis.estimatedPrintTime}` / `{meta:analysis.filament.tool0.length}` come from the file analysis.
+
+The settings page shows a live preview with sample data as you type; values the browser cannot resolve are shown as `???` there only. The **Send a test message** button uses the selected event's template when the feature is enabled and that event has an override, while the envelope button in the navigation bar always sends the built-in test message.
+
 ### Sample images
 <img width="326" alt="OctoText1" src="assets/img/IMG_6024.PNG">
 <img width="326" alt="OctoText2" src="assets/img/IMG_6025.PNG">
