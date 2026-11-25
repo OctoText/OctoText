@@ -720,7 +720,7 @@ def test_all_core_placeholders_render_from_printer_data():
     assert parts[9] == "Printing"
     assert parts[10] == "Thermal runaway"
     assert parts[11] == "admin"
-    assert parts[12] == "error Message sent from: TestPrinter"
+    assert parts[12] == "error"
 
 
 def test_meta_paths_resolve_dicts_and_fall_back_safely():
@@ -766,9 +766,7 @@ def test_meta_paths_resolve_dicts_and_fall_back_safely():
         "print_progress",
         {"file": "benchy.gcode", "origin": "local", "path": "benchy.gcode"},
     )
-    assert message.get_content().startswith(
-        "linear|9000|12500| Message sent from: TestPrinter"
-    )
+    assert message.get_content().rstrip("\n") == "linear|9000|12500|"
 
     plugin._file_manager.get_metadata.return_value = {"analysis": "not-a-dict"}
     message = queue_notification(
@@ -778,9 +776,7 @@ def test_meta_paths_resolve_dicts_and_fall_back_safely():
         "print_progress",
         {"file": "benchy.gcode", "origin": "local", "path": "benchy.gcode"},
     )
-    assert message.get_content().startswith(
-        "linear||| Message sent from: TestPrinter"
-    )
+    assert message.get_content().rstrip("\n") == "linear|||"
 
 
 def test_plugin_helpers_resolve_and_fail_safely():
@@ -904,9 +900,7 @@ def test_missing_printer_data_renders_empty_values():
     message = queue_notification(
         plugin, "Print Progress", "benchy.gcode", "print_progress", {}
     )
-    assert message.get_content().rstrip("\n") == (
-        "|||||| Message sent from: TestPrinter"
-    )
+    assert message.get_content().rstrip("\n") == "||||||"
 
 
 def test_print_done_extras_drive_elapsed_percent_and_remaining():
@@ -929,12 +923,10 @@ def test_print_done_extras_drive_elapsed_percent_and_remaining():
         "print_done",
         {"elapsed": 9000, "percent": 100, "remaining": 0},
     )
-    assert message.get_content().rstrip("\n") == (
-        "2:30:00|100|0:00:00| Message sent from: TestPrinter"
-    )
+    assert message.get_content().rstrip("\n") == "2:30:00|100|0:00:00|"
 
 
-def test_custom_body_keeps_sent_from_footer_and_prefixes():
+def test_custom_body_omits_sent_from_footer_and_keeps_prefixes():
     plugin = make_plugin(
         settings_overrides={
             "en_custom_templates": True,
@@ -953,7 +945,7 @@ def test_custom_body_keeps_sent_from_footer_and_prefixes():
         {"file": "benchy.gcode"},
     )
     assert message["Subject"] == "PFX TestPrinter: S"
-    assert message.get_content().rstrip("\n") == "B Message sent from: TestPrinter"
+    assert message.get_content().rstrip("\n") == "B"
 
 
 def test_preview_marks_unresolved_advanced_lookups():

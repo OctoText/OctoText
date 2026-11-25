@@ -110,103 +110,6 @@
 
     </fieldset>
     <fieldset>
-        <legend>{{ _('Notification Templates') }}</legend>
-        <p class="help-block">{% trans %}
-                Optionally customize the subject and body for each notification event. Leave a
-                field blank to keep the built-in OctoText wording.
-            {% endtrans %}
-        </p>
-        <label class="checkbox">
-            <input type="checkbox" value="Custom notification templates" data-bind="checked: settings.settings.plugins.OctoText.en_custom_templates">
-            {{ _('Enable custom notification templates.') }}
-        </label>
-
-        <div data-bind="visible: settings.settings.plugins.OctoText.en_custom_templates()">
-            <div class="control-group">
-                <label class="control-label">{{ _('Event') }}</label>
-                <div class="controls">
-                    <select class="input-block-level" data-bind="options: templateEvents, optionsText: 'label', optionsValue: 'key', value: selectedTemplateEvent, optionsCaption: templateEventCaption"></select>
-                    <span class="help-block">{% trans %}
-                            Events marked with a star already have a custom template.
-                        {% endtrans %}
-                    </span>
-                </div>
-            </div>
-
-            <div data-bind="visible: selectedTemplateEvent()">
-                <div class="control-group">
-                    <label class="control-label">{{ _('Subject template') }}</label>
-                    <div class="controls">
-                        <input class="input-block-level" type="text" placeholder="{{ _('Leave blank to use default') }}" data-bind="value: selectedTemplate().subject, valueUpdate: 'input'">
-                    </div>
-                </div>
-
-                <div class="control-group">
-                    <label class="control-label">{{ _('Body template') }}</label>
-                    <div class="controls">
-                        <textarea class="input-block-level" rows="3" placeholder="{{ _('Leave blank to use default') }}" data-bind="value: selectedTemplate().body, valueUpdate: 'input'"></textarea>
-                        <span class="help-block">
-                            <button type="button" class="btn btn-mini" data-bind="click: resetSelectedTemplate">{{ _('Reset to default') }}</button>
-                        </span>
-                    </div>
-                </div>
-
-                <div class="control-group">
-                    <label class="control-label">
-                        <a href="#" data-bind="click: toggleVariableReference, text: variableReferenceLabel"></a>
-                    </label>
-                    <div class="controls">
-                        <table class="table table-condensed table-striped" data-bind="visible: showVariableReference">
-                            <thead>
-                                <tr>
-                                    <th>{{ _('Variable') }}</th>
-                                    <th>{{ _('Description') }}</th>
-                                    <th>{{ _('Insert') }}</th>
-                                </tr>
-                            </thead>
-                            <tbody data-bind="foreach: templateVariables">
-                                <tr>
-                                    <td><code data-bind="text: token"></code></td>
-                                    <td data-bind="text: description"></td>
-                                    <td>
-                                        <button type="button" class="btn btn-mini" data-bind="click: function () { $root.insertVariable(token, 'subject'); }">+Subj</button>
-                                        <button type="button" class="btn btn-mini" data-bind="click: function () { $root.insertVariable(token, 'body'); }">+Body</button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                        <div data-bind="visible: showVariableReference">
-                            <p class="help-block"><strong>Advanced: data from other plugins</strong></p>
-                            <p class="help-block">
-                                Pull metadata with <code>{meta:dotted.path}</code> (for example
-                                <code>{meta:progress.printTimeLeftOrigin}</code>,
-                                <code>{meta:analysis.estimatedPrintTime}</code> or
-                                <code>{meta:analysis.filament.tool0.length}</code>), or call a
-                                zero-argument plugin helper with <code>{plugin:plugin_id.helper_name}</code>
-                                (optionally <code>{plugin:plugin_id.helper_name.key}</code>).
-                                Missing plugins, helpers and data are left empty instead of breaking
-                                the notification. PrintTimeGenius is a common source of metadata
-                                such as <code>progress.printTimeLeftOrigin</code> (<code>genius</code>
-                                when active). Values the browser cannot resolve are shown as
-                                <code>???</code> in the preview.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="control-group">
-                    <label class="control-label">{{ _('Preview') }}</label>
-                    <div class="controls">
-                        <div style="border: 1px solid #ddd; border-radius: 3px; padding: 8px; background: #fafafa;">
-                            <div><strong>{{ _('Subject') }}:</strong> <span data-bind="text: selectedTemplatePreview().subject"></span></div>
-                            <pre style="white-space: pre-wrap; margin: 8px 0 0 0; border: 0; background: transparent; padding: 0;" data-bind="text: selectedTemplatePreview().body"></pre>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </fieldset>
-    <fieldset>
         <legend>{{ _('EMail Configuration') }}</legend>
 
         <p class="help-block">{% trans %}
@@ -374,11 +277,107 @@
                     {% endtrans %}
                 </span>
                 <span class="help-block">{% trans %}
-                        If custom notification templates are enabled and an event is selected above, this test uses that event's template with sample data. The button in the navigation bar always sends the built-in test message.
+                        If custom notification templates are enabled and an event is selected below, this test uses that event's template with sample data. The button in the navigation bar always sends the built-in test message.
                     {% endtrans %}
                 </span>
             </div>
         </div>
 
+    </fieldset>
+    <fieldset>
+        <legend>{{ _('Notification Templates') }}</legend>
+        <p class="help-block">{% trans %}
+                Optionally customize the subject and body for each notification event. Leave a
+                field blank to keep the built-in OctoText wording.
+            {% endtrans %}
+        </p>
+        <label class="checkbox">
+            <input type="checkbox" value="Custom notification templates" data-bind="checked: settings.settings.plugins.OctoText.en_custom_templates">
+            {{ _('Enable custom notification templates.') }}
+        </label>
+
+        <div data-bind="visible: settings.settings.plugins.OctoText.en_custom_templates()">
+            <div class="control-group">
+                <label class="control-label">{{ _('Event') }}</label>
+                <div class="controls">
+                    <select class="input-block-level" data-bind="options: templateEvents, optionsText: 'label', optionsValue: 'key', value: selectedTemplateEvent, optionsCaption: templateEventCaption"></select>
+                    <span class="help-block">{% trans %}
+                            Events marked with a star already have a custom template.
+                        {% endtrans %}
+                    </span>
+                </div>
+            </div>
+
+            <div data-bind="visible: selectedTemplateEvent()">
+                <div class="control-group">
+                    <label class="control-label">{{ _('Subject template') }}</label>
+                    <div class="controls">
+                        <input class="input-block-level" type="text" data-bind="value: selectedTemplate().subject, valueUpdate: 'input', attr: { placeholder: selectedTemplatePlaceholder().subject }">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label class="control-label">{{ _('Body template') }}</label>
+                    <div class="controls">
+                        <textarea class="input-block-level" rows="3" data-bind="value: selectedTemplate().body, valueUpdate: 'input', attr: { placeholder: selectedTemplatePlaceholder().body }"></textarea>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label class="control-label">{{ _('Preview') }}</label>
+                    <div class="controls">
+                        <div style="border: 1px solid #ddd; border-radius: 3px; padding: 8px; background: #fafafa;">
+                            <div><strong>{{ _('Subject') }}:</strong></div>
+                            <pre style="white-space: pre-wrap; margin: 4px 0 8px 0; border: 0; background: transparent; padding: 0;" data-bind="text: selectedTemplatePreview().subject"></pre>
+                            <div><strong>{{ _('Body') }}:</strong></div>
+                            <pre style="white-space: pre-wrap; margin: 4px 0 0 0; border: 0; background: transparent; padding: 0;" data-bind="text: selectedTemplatePreview().body"></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label class="control-label">
+                        <a href="#" data-bind="click: toggleVariableReference, text: variableReferenceLabel"></a>
+                    </label>
+                    <div class="controls">
+                        <table class="table table-condensed table-striped" data-bind="visible: showVariableReference">
+                            <thead>
+                                <tr>
+                                    <th>{{ _('Variable') }}</th>
+                                    <th>{{ _('Description') }}</th>
+                                    <th>{{ _('Insert') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody data-bind="foreach: templateVariables">
+                                <tr>
+                                    <td><code data-bind="text: token"></code></td>
+                                    <td data-bind="text: description"></td>
+                                    <td>
+                                        <button type="button" class="btn btn-mini" data-bind="click: function () { $root.insertVariable(token, 'subject'); }">+Subj</button>
+                                        <button type="button" class="btn btn-mini" data-bind="click: function () { $root.insertVariable(token, 'body'); }">+Body</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div data-bind="visible: showVariableReference">
+                            <p class="help-block"><strong>Advanced: data from other plugins</strong></p>
+                            <p class="help-block">
+                                Pull metadata with <code>{meta:dotted.path}</code> (for example
+                                <code>{meta:progress.printTimeLeftOrigin}</code>,
+                                <code>{meta:analysis.estimatedPrintTime}</code> or
+                                <code>{meta:analysis.filament.tool0.length}</code>), or call a
+                                zero-argument plugin helper with <code>{plugin:plugin_id.helper_name}</code>
+                                (optionally <code>{plugin:plugin_id.helper_name.key}</code>).
+                                Missing plugins, helpers and data are left empty instead of breaking
+                                the notification. PrintTimeGenius is a common source of metadata
+                                such as <code>progress.printTimeLeftOrigin</code> (<code>genius</code>
+                                when active). Values the browser cannot resolve are shown as
+                                <code>???</code> in the preview.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </fieldset>
 </form>

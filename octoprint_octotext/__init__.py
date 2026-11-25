@@ -691,7 +691,7 @@ class OctoTextPlugin(
             return {
                 "event": event,
                 "message": message,
-                "printer": "Prusa MK4",
+                "printer": self.get_printer_name(),
                 "file": file,
                 "percent": percent,
                 "elapsed": elapsed,
@@ -793,9 +793,10 @@ class OctoTextPlugin(
         )
         if subject is None or not subject.strip():
             subject = sample["event"]
-        if body is None:
+        used_custom_body = body is not None
+        if not used_custom_body:
             body = sample["message"]
-        return subject, body
+        return subject, body, used_custom_body
 
     def _prepare_email_message_and_send(
         self,
@@ -807,6 +808,7 @@ class OctoTextPlugin(
         direct_send=False,
         event_key=None,
         template_extras=None,
+        append_sender=True,
     ):
         """
         Prepare the email for sending and put it into the message queue or the email is directly sent
@@ -869,6 +871,7 @@ class OctoTextPlugin(
 
         subject_text = title
         body_text = body
+        used_custom_body = False
         if (
             event_key
             and self._settings.get(["en_custom_templates"])
@@ -887,6 +890,7 @@ class OctoTextPlugin(
             )
             if custom_body is not None:
                 body_text = custom_body
+                used_custom_body = True
 
         fromAddr = self._get_from_address()
 
@@ -916,9 +920,13 @@ class OctoTextPlugin(
         email_message["From"] = fromAddr  # 'OctoText@outlook.com'
         email_message["To"] = email_addr
         email_message["Date"] = formatdate(localtime=True)
-        content_string = " Message sent from: " + sender
+        final_body = (
+            body_text
+            if (used_custom_body or not append_sender)
+            else body_text + " Message sent from: " + sender
+        )
         email_message.set_content(
-            body_text + content_string, charset="utf-8"
+            final_body, charset="utf-8"
         )  # utf-8 allows non ascii characters in the test string
         if image_path != "":
             try:
@@ -1074,12 +1082,14 @@ class OctoTextPlugin(
             event_key = data.get("event") if isinstance(data, dict) else None
             if event_key not in _TEMPLATE_EVENT_KEYS:
                 event_key = None
+            append_sender = True
             if (
                 event_key
                 and self._settings.get(["en_custom_templates"])
                 and self._event_has_custom_template(event_key)
             ):
-                title, body = self._render_event_sample(event_key)
+                title, body, used_custom_body = self._render_event_sample(event_key)
+                append_sender = not used_custom_body
                 sender = self.get_printer_name()
                 self._logger.debug(
                     "Sending text using the %s template", event_key
@@ -1096,6 +1106,7 @@ class OctoTextPlugin(
                     body,
                     sender=sender,
                     direct_send=True,
+                    append_sender=append_sender,
                 )
             except Exception as e:
                 self._logger.exception("Exception while sending text, %s", e)

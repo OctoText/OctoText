@@ -64,7 +64,7 @@ $(function() {
             }),
             print_done: makeSample({
                 event: "Print job finished",
-                message: "benchy.gcode \n\rfinished printing, elapsed time: 2:30:00.",
+                message: "benchy.gcode\nfinished printing, elapsed time: 2:30:00.",
                 file: "benchy.gcode",
                 percent: "100",
                 elapsed: "2:30:00",
@@ -204,6 +204,56 @@ $(function() {
             return false;
         };
 
+        self.defaultTemplatePlaceholders = {
+            print_started: {
+                subject: "Print job started",
+                body: "{file} has started printing locally. Message sent from: {printer}"
+            },
+            print_done: {
+                subject: "Print job finished",
+                body: "{file}\nfinished printing, elapsed time: {elapsed}. Message sent from: {printer}"
+            },
+            print_progress: {
+                subject: "Print Progress {percent}% finished.",
+                body: "{file} Message sent from: {printer}"
+            },
+            print_paused: {
+                subject: "Print Paused by {user}",
+                body: "file: {file} Message sent from: {printer}"
+            },
+            print_resumed: {
+                subject: "Resumed by {user}",
+                body: "file: {file} Message sent from: {printer}"
+            },
+            print_cancelled: {
+                subject: "Print canceled by {user}",
+                body: "file: {file} Message sent from: {printer}"
+            },
+            print_failed: {
+                subject: "Print Fail",
+                body: "{reason} file: {file} Message sent from: {printer}"
+            },
+            upload: {
+                subject: "A file was uploaded",
+                body: "{file} was uploaded locally Message sent from: {printer}"
+            },
+            error: {
+                subject: "Printer ERROR!",
+                body: "{error} Message sent from: {printer}"
+            }
+        };
+
+        self.selectedTemplatePlaceholder = ko.computed(function () {
+            var key = self.selectedTemplateEvent();
+            if (key && self.defaultTemplatePlaceholders[key]) {
+                return self.defaultTemplatePlaceholders[key];
+            }
+            return {
+                subject: gettext("Leave blank to use default"),
+                body: gettext("Leave blank to use default")
+            };
+        });
+
         self.insertVariable = function (token, field) {
             var template = self.selectedTemplate();
             if (!template || !template[field]) {
@@ -212,15 +262,6 @@ $(function() {
             var current = template[field]() || "";
             var separator = current && !/\s$/.test(current) ? " " : "";
             template[field](current + separator + token);
-        };
-
-        self.resetSelectedTemplate = function () {
-            var template = self.selectedTemplate();
-            if (!template || template === self.emptyTemplate) {
-                return;
-            }
-            template.subject("");
-            template.body("");
         };
 
         function stringifyTemplateValue(value) {
@@ -265,6 +306,14 @@ $(function() {
             if (!pluginSettings) {
                 return {subject: "", body: ""};
             }
+            var sample = Object.assign({}, self.templateSamples[key]);
+            var appName = self.settings.settings &&
+                self.settings.settings.appearance &&
+                self.settings.settings.appearance.name &&
+                self.settings.settings.appearance.name();
+            if (appName) {
+                sample.printer = appName;
+            }
             var template = self.selectedTemplate();
             var rawBody = template.body() || "";
             var subject = renderTemplate(template.subject() || "", sample, true);
@@ -272,7 +321,8 @@ $(function() {
             if (!subject.trim()) {
                 subject = stringifyTemplateValue(sample.event);
             }
-            if (!rawBody.trim()) {
+            var usedCustomBody = !!rawBody.trim();
+            if (!usedCustomBody) {
                 body = stringifyTemplateValue(sample.message);
             }
             var prefix = pluginSettings.subject_prefix
@@ -284,7 +334,7 @@ $(function() {
                 : "";
             return {
                 subject: (prefix + appearance + subject).replace(/[\r\n]+/g, " "),
-                body: body + " Message sent from: " + sample.printer
+                body: usedCustomBody ? body : body + " Message sent from: " + sample.printer
             };
         }, null, {deferEvaluation: true});
         
