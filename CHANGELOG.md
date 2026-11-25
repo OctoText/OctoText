@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.6.0](https://github.com/OctoText/OctoText/compare/0.5.0...0.6.0) (2026-11-25)
+
+
+### Features
+
+* add custom per-event notification templates ([d6adaef](https://github.com/OctoText/OctoText/commit/d6adaefd971936b652d2b02861e902c8e15a8d19))
+* **settings:** add notification template editor and live preview ([af42db6](https://github.com/OctoText/OctoText/commit/af42db656cc464c279138317083d6dd5790b392f))
+
+
+### Documentation
+
+* document custom notification templates ([e96ad69](https://github.com/OctoText/OctoText/commit/e96ad69aeb846e9fdbcaea50c91dad1fe3b0214b))
+* **plan:** record notification template decisions ([3c3844a](https://github.com/OctoText/OctoText/commit/3c3844a7cf9ce433a144483aebe6b284c9eaf958))
+
 ## [0.5.0](https://github.com/OctoText/OctoText/compare/0.4.0...0.5.0) (2026-11-24)
 
 

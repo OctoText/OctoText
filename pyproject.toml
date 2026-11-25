@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "OctoPrint-OctoText"
-version = "0.5.0"
+version = "0.6.0"
 description = "Send text/email messages on common printer events"
 authors = [
     { name = "Douglas Krahmer (original: Stephen Berry)", email = "doug.octotext@remhark.com" },
